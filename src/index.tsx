@@ -10,6 +10,8 @@
 
 const ndarray = require('ndarray');
 
+const resourceUrl = require('file!./ProgrammerArt-v3.0-ResourcePack-MC19.zip');
+
 import Game from '@buffy/voxel-engine';
 
 const game = new Game({
@@ -23,6 +25,9 @@ const game = new Game({
       },
     },
     'game-shell-fps-camera': {position: [0, -100, 0]},
+    'voxel-stitch': {
+      artpacks: [resourceUrl]
+    },
   },
 });
 
