@@ -54,6 +54,7 @@
   },
   "dependencies": {
     "glslify-loader": "^1.0.2",
+    "ndarray": "^1.0.18",
     "raw-loader": "^0.5.1",
     "react": "^15.3.1",
     "react-dom": "^15.3.1",
