@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "es6",
+    "moduleResolution": "node",
+    "target": "es6",
+    "sourceMap": true,
+    "jsx": "preserve",
+    "allowSyntheticDefaultImports": true
+  },
+  "files": [
+    "src/index.tsx",
+    "typings/index.d.ts"
+  ]
+}
