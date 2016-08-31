@@ -4,6 +4,7 @@
   "globalDependencies": {
     "node": "registry:dt/node#6.0.0+20160826120425",
     "react": "registry:dt/react#0.14.0+20160817201227",
-    "react-dom": "registry:dt/react-dom#0.14.0+20160412154040"
+    "react-dom": "registry:dt/react-dom#0.14.0+20160412154040",
+    "stats": "registry:dt/stats#0.16.0+20160505160752"
   }
 }
