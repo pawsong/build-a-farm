@@ -5,6 +5,7 @@
     "gl-matrix/gl-matrix-typed": "registry:dt/gl-matrix/gl-matrix-typed#2.2.2+20160718172905"
   },
   "globalDependencies": {
+    "material-ui": "registry:dt/material-ui#0.15.1+20160824122606",
     "node": "registry:dt/node#6.0.0+20160826120425",
     "pako": "registry:dt/pako#0.0.0+20160719232514",
     "react": "registry:dt/react#0.14.0+20160817201227",

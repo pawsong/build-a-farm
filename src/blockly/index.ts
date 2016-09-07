@@ -1,3 +1,5 @@
+import './blocks';
+
 import Blockly from './Blockly';
 export { Blockly }
 
