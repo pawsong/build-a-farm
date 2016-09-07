@@ -1,8 +1,12 @@
 {
   "name": "build-a-farm",
-  "dependencies": {},
+  "dependencies": {
+    "bluebird": "registry:npm/bluebird#3.4.1+20160811213708",
+    "gl-matrix/gl-matrix-typed": "registry:dt/gl-matrix/gl-matrix-typed#2.2.2+20160718172905"
+  },
   "globalDependencies": {
     "node": "registry:dt/node#6.0.0+20160826120425",
+    "pako": "registry:dt/pako#0.0.0+20160719232514",
     "react": "registry:dt/react#0.14.0+20160817201227",
     "react-dom": "registry:dt/react-dom#0.14.0+20160412154040",
     "stats": "registry:dt/stats#0.16.0+20160505160752"
