@@ -2,6 +2,11 @@ import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import mat4 from 'gl-matrix/src/gl-matrix/mat4';
 const createRay = require('ray-aabb');
 
+import ModeFsm, {
+  ModeState,
+  STATE_TRANSITION,
+} from './ModeFsm';
+
 import {
   Game,
   GameObject,
@@ -11,8 +16,6 @@ import {
 
 import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
 import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
-
-import Mode from './Mode';
 
 import { RAY_MIN_DIST } from '../constants';
 
@@ -24,13 +27,17 @@ const v1 = vec3.create();
 
 const focusedVoxel = vec3.create();
 
-class FpsMode extends Mode {
+class FpsMode extends ModeState<void> {
+  game: Game;
+
   camera: FpsCamera;
   ray: any;
   controls: FpsControl;
 
-  constructor(game: Game, player: GameObject) {
-    super(game);
+  constructor(fsm: ModeFsm, game: Game, player: GameObject) {
+    super(fsm);
+
+    this.game = game;
 
     const { shell } = game;
 
@@ -88,12 +95,14 @@ class FpsMode extends Mode {
     this.controls.target(player.physics, player, this.camera.camera);
   }
 
-  start() {
+  onEnter() {
     const { shell } = this.game;
     shell.pointerLock = true;
     shell.stickyPointerLock = true;
 
     this.onResize();
+
+    this.game.on('use', this.handleUse);
   }
 
   onResize() {
@@ -149,6 +158,15 @@ class FpsMode extends Mode {
   onTick(dt: number) {
     this.controls.tick(dt);
   }
+
+  onLeave() {
+    this.game.removeListener('use', this.handleUse);
+  }
+
+  handleUse = (target: GameObject) => this.transitionTo(STATE_TRANSITION, {
+    target,
+    viewMatrix: this.camera.viewMatrix,
+  });
 }
 
 export default FpsMode;

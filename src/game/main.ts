@@ -6,6 +6,11 @@ import Mode from './modes/Mode';
 import FpsMode from './modes/FpsMode';
 import TransitionMode from './modes/TransitionMode';
 import TopDownMode from './modes/TopDownMode';
+import ModeFsm, {
+  STATE_FPS,
+  STATE_TRANSITION,
+  STATE_TOP_DOWN,
+} from './modes/ModeFsm';
 
 import PF from 'pathfinding';
 
@@ -637,8 +642,6 @@ function main ({
             const { params: vids } = message;
             const { position } = object;
 
-            console.log(position);
-
             switch(vids.length) {
               case 1: {
                 const result = searchForNearestVoxel1(ground, position[0], position[2], vids[0]);
@@ -713,35 +716,16 @@ function main ({
 
       // Rendering
 
-      const fpsMode = new FpsMode(game, player);
-      const transitionMode = new TransitionMode(game, codeEditor);
-      const topDownMode = new TopDownMode(game);
+      const fsm = new ModeFsm();
+      fsm.register(STATE_FPS, new FpsMode(fsm, game, player));
+      fsm.register(STATE_TRANSITION, new TransitionMode(fsm, game, codeEditor));
+      fsm.register(STATE_TOP_DOWN, new TopDownMode(fsm, game));
+      fsm.transitionTo(STATE_FPS);
 
-      let activeMode: Mode = fpsMode;
-      fpsMode.start();
-
-      shell.on('gl-resize', () => activeMode.onResize());
-      shell.on('gl-render', () => activeMode.onRender());
-
-      game.on('tick', dt => activeMode.onTick(dt));
+      shell.on('gl-resize', () => fsm.current.onResize());
+      shell.on('gl-render', () => fsm.current.onRender());
+      game.on('tick', dt => fsm.current.onTick(dt));
       game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position[0], position[1], position[2]));
-      game.on('use', (object: GameObject) => {
-        codeEditor.setOpacity(0);
-        codeEditor.open(object.id);
-
-        // Transition for 700 ms
-
-        activeMode = transitionMode;
-        transitionMode.start(object, fpsMode.camera.viewMatrix, (succeeded: boolean) => {
-          if (succeeded) {
-            activeMode = topDownMode;
-            topDownMode.start(transitionMode.target);
-            topDownMode.onRender();
-          } else {
-            // TODO: Handle succeeded === false. Cancelled case.
-          }
-        });
-      });
     });
   });
 }

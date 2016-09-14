@@ -1,4 +1,3 @@
-import Mode from './Mode';
 import {
   Game,
   GameObject,
@@ -6,15 +5,25 @@ import {
   TopDownCamera,
 } from '@buffy/voxel-engine';
 
-class TopDownMode extends Mode {
+import ModeFsm, {
+  ModeState,
+} from './ModeFsm';
+
+interface Params {
+  target: GameObject;
+}
+
+class TopDownMode extends ModeState<Params> {
+  game: Game;
   camera: TopDownCamera;
 
-  constructor(game: Game) {
-    super(game);
+  constructor(fsm: ModeFsm, game: Game) {
+    super(fsm);
+    this.game = game;
     this.camera = new TopDownCamera(1 / 4);
   }
 
-  start(target: GameObject) {
+  onEnter({ target }) {
     this.camera.changeTarget(target);
     this.onResize();
   }
@@ -30,6 +39,10 @@ class TopDownMode extends Mode {
   }
 
   onTick() {
+
+  }
+
+  onLeave() {
 
   }
 }

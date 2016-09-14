@@ -6,7 +6,11 @@ import GameObject from '@buffy/voxel-engine/lib/GameObject';
 import TransitionCamera from '@buffy/voxel-engine/lib/cameras/TransitionCamera';
 import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 
-import Mode from './Mode';
+import ModeFsm, {
+  ModeState,
+  STATE_TOP_DOWN,
+} from './ModeFsm';
+
 import CodeEditor from '../../components/CodeEditor';
 
 const v = vec3.create();
@@ -19,41 +23,45 @@ interface Callback {
   (succeeded: boolean): any;
 }
 
-class TransitionMode extends Mode {
-  lt: number;
+interface Params {
+  target: GameObject;
+  viewMatrix: mat4;
+}
+
+const DURATION = 500;
+
+class TransitionMode extends ModeState<Params> {
+  game: Game;
   accum: number;
   codeEditor: CodeEditor;
   camera: TransitionCamera;
   target: GameObject;
   fromMatrix: mat4;
-  enabled: boolean;
 
-  callback: Callback;
+  constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor) {
+    super(fsm);
 
-  constructor(game: Game, codeEditor: CodeEditor) {
-    super(game);
+    this.game = game;
 
-    this.lt = 0;
     this.accum = 0;
     this.codeEditor = codeEditor;
     this.camera = new TransitionCamera();
     this.fromMatrix = mat4.create();
-    this.enabled = false;
   }
 
-  start(target: GameObject, viewMatrix: mat4, callback: Callback) {
+  onEnter({ target, viewMatrix }) {
     const { shell } = this.game;
     shell.pointerLock = false;
     shell.stickyPointerLock = false;
 
     this.target = target;
     mat4.copy(this.fromMatrix, viewMatrix);
-    this.lt = performance.now();
 
+    this.codeEditor.setOpacity(0);
+    this.codeEditor.open(this.target.id);
+
+    this.accum = 0;
     this.onResize();
-    this.enabled = true;
-
-    this.callback = callback;
   }
 
   onResize() {
@@ -62,21 +70,8 @@ class TransitionMode extends Mode {
   }
 
   onRender() {
-    if (!this.enabled) return;
-
-    const now = performance.now();
-    const dt = now - this.lt;
-    this.lt = now;
-
-    this.accum += dt;
-    const progress = Math.min(this.accum / 500, 1);
+    const progress = this.accum / DURATION;
     this.codeEditor.setOpacity(progress);
-
-    if (progress === 1) {
-      this.enabled = false;
-      this.callback(true);
-      return;
-    }
 
     vec3.add(v, this.target.position, offset);
     mat4.fromTranslation(toMatrix, v);
@@ -88,7 +83,17 @@ class TransitionMode extends Mode {
   }
 
   onTick(dt: number) {
-    // Do nothing
+    this.accum += dt;
+
+    if (this.accum > DURATION) {
+      this.transitionTo(STATE_TOP_DOWN, {
+        target: this.target,
+      });
+    }
+  }
+
+  onLeave() {
+
   }
 }
 
