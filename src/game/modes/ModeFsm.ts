@@ -42,3 +42,4 @@ export default ModeFsm;
 export const STATE_FPS = 'STATE_FPS';
 export const STATE_TRANSITION = 'STATE_TRANSITION';
 export const STATE_TOP_DOWN = 'STATE_TOP_DOWN';
+export const STATE_TO_FPS = 'STATE_TO_FPS';

@@ -2,14 +2,15 @@ import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import mat4 from 'gl-matrix/src/gl-matrix/mat4';
 import JSZip from 'jszip';
 
-import Mode from './modes/Mode';
 import FpsMode from './modes/FpsMode';
 import TransitionMode from './modes/TransitionMode';
 import TopDownMode from './modes/TopDownMode';
+import ToFpsMode from './modes/ToFpsMode';
 import ModeFsm, {
   STATE_FPS,
   STATE_TRANSITION,
   STATE_TOP_DOWN,
+  STATE_TO_FPS,
 } from './modes/ModeFsm';
 
 import PF from 'pathfinding';
@@ -717,9 +718,11 @@ function main ({
       // Rendering
 
       const fsm = new ModeFsm();
-      fsm.register(STATE_FPS, new FpsMode(fsm, game, player));
+      const fpsMode = new FpsMode(fsm, game, player);
+      fsm.register(STATE_FPS, fpsMode);
       fsm.register(STATE_TRANSITION, new TransitionMode(fsm, game, codeEditor));
       fsm.register(STATE_TOP_DOWN, new TopDownMode(fsm, game));
+      fsm.register(STATE_TO_FPS, new ToFpsMode(fsm, game, codeEditor, fpsMode));
       fsm.transitionTo(STATE_FPS);
 
       shell.on('gl-resize', () => fsm.current.onResize());

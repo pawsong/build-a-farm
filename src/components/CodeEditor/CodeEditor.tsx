@@ -49,18 +49,24 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
   open(objectId: string) {
     if (this.opened) return;
     this.opened = true;
+    this.setState({ running: false });
 
     this.objectId = objectId;
 
     this.root.style.display = 'block';
-    this.workspace = Blockly.inject(this.root, { toolbox });
-    Blockly.JavaScript.init(this.workspace);
+
+    if (!this.workspace) {
+      this.workspace = Blockly.inject(this.root, { toolbox });
+      Blockly.JavaScript.init(this.workspace);
+    }
 
     this.props.vm.spawn(this.objectId);
   }
 
   close() {
-
+    if (!this.opened) return;
+    this.opened = false;
+    this.root.style.display = 'none';
   }
 
   setOpacity(opacity: number) {

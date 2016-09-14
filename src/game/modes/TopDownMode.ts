@@ -7,6 +7,7 @@ import {
 
 import ModeFsm, {
   ModeState,
+  STATE_TO_FPS,
 } from './ModeFsm';
 
 interface Params {
@@ -26,6 +27,8 @@ class TopDownMode extends ModeState<Params> {
   onEnter({ target }) {
     this.camera.changeTarget(target);
     this.onResize();
+
+    document.addEventListener('keydown', this.handleKeydown, false);
   }
 
   onResize() {
@@ -43,7 +46,15 @@ class TopDownMode extends ModeState<Params> {
   }
 
   onLeave() {
+    document.removeEventListener('keydown', this.handleKeydown, false);
+  }
 
+  handleKeydown = (e: KeyboardEvent) => {
+    if (e.keyCode !== 27 /* ESC */) return;
+
+    this.transitionTo(STATE_TO_FPS, {
+      viewMatrix: this.camera.viewMatrix,
+    });
   }
 }
 

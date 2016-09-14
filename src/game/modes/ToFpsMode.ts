@@ -9,7 +9,9 @@ import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 import ModeFsm, {
   ModeState,
   STATE_TOP_DOWN,
+  STATE_FPS,
 } from './ModeFsm';
+import FpsMode from './FpsMode';
 
 import CodeEditor from '../../components/CodeEditor';
 
@@ -19,8 +21,11 @@ const up = vec3.fromValues(0, 1, 0);
 
 const toMatrix = mat4.create();
 
+interface Callback {
+  (succeeded: boolean): any;
+}
+
 interface Params {
-  target: GameObject;
   viewMatrix: mat4;
 }
 
@@ -31,30 +36,23 @@ class TransitionMode extends ModeState<Params> {
   accum: number;
   codeEditor: CodeEditor;
   camera: TransitionCamera;
-  target: GameObject;
   fromMatrix: mat4;
+  fpsMode: FpsMode;
 
-  constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor) {
+  constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor, fpsMode: FpsMode) {
     super(fsm);
 
     this.game = game;
+    this.codeEditor = codeEditor;
+    this.fpsMode = fpsMode;
 
     this.accum = 0;
-    this.codeEditor = codeEditor;
     this.camera = new TransitionCamera();
     this.fromMatrix = mat4.create();
   }
 
-  onEnter({ target, viewMatrix }) {
-    const { shell } = this.game;
-    shell.pointerLock = false;
-    shell.stickyPointerLock = false;
-
-    this.target = target;
+  onEnter({ viewMatrix }) {
     mat4.copy(this.fromMatrix, viewMatrix);
-
-    this.codeEditor.setOpacity(0);
-    this.codeEditor.open(this.target.id);
 
     this.accum = 0;
     this.onResize();
@@ -67,14 +65,10 @@ class TransitionMode extends ModeState<Params> {
 
   onRender() {
     const progress = this.accum / DURATION;
-    this.codeEditor.setOpacity(progress);
+    this.codeEditor.setOpacity(1 - progress);
 
-    vec3.add(v, this.target.position, offset);
-    mat4.fromTranslation(toMatrix, v);
-    lookAt(toMatrix, v, this.target.position, up);
-    mat4.invert(toMatrix, toMatrix);
-
-    this.camera.update(this.fromMatrix, toMatrix, progress, progress * this.camera.viewWidth / 4);
+    this.fpsMode.camera.update();
+    this.camera.update(this.fromMatrix, this.fpsMode.camera.viewMatrix, progress, progress * this.camera.viewWidth / 4);
     this.game.render(this.camera);
   }
 
@@ -82,14 +76,12 @@ class TransitionMode extends ModeState<Params> {
     this.accum += dt;
 
     if (this.accum > DURATION) {
-      this.transitionTo(STATE_TOP_DOWN, {
-        target: this.target,
-      });
+      this.transitionTo(STATE_FPS);
     }
   }
 
   onLeave() {
-    this.codeEditor.setOpacity(1);
+    this.codeEditor.close();
   }
 }
 
