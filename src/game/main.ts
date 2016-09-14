@@ -164,8 +164,7 @@ var BLOCKS: any[] = [
   {
     id: 4,
     name: 'logOak',
-    texture: 'brick',
-    // texture: ['log_oak_top', 'log_oak_top', 'log_oak'],
+    texture: ['log_oak_top', 'log_oak_top', 'log_oak'],
     hardness: Infinity,
   },
   {
