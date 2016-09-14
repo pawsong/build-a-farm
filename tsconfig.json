@@ -10,6 +10,7 @@
   "files": [
     "src/index.tsx",
     "src/global.d.ts",
+    "src/vm/worker.ts",
     "typings/index.d.ts"
   ]
 }

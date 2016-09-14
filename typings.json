@@ -5,9 +5,16 @@
     "gl-matrix/gl-matrix-typed": "registry:dt/gl-matrix/gl-matrix-typed#2.2.2+20160718172905"
   },
   "globalDependencies": {
+    "babel-core": "registry:dt/babel-core#6.7.0+20160423062108",
+    "babel-template": "registry:dt/babel-template#6.7.0+20160423062108",
+    "babel-traverse": "registry:dt/babel-traverse#6.7.0+20160423062108",
+    "babel-types": "registry:dt/babel-types#6.7.0+20160423062108",
+    "babylon": "registry:dt/babylon#6.7.0+20160423062108",
+    "jszip": "registry:dt/jszip#0.0.0+20160709055933",
     "material-ui": "registry:dt/material-ui#0.15.1+20160824122606",
     "node": "registry:dt/node#6.0.0+20160826120425",
     "pako": "registry:dt/pako#0.0.0+20160719232514",
+    "pathfinding": "registry:dt/pathfinding#0.0.0+20160829112816",
     "react": "registry:dt/react#0.14.0+20160817201227",
     "react-dom": "registry:dt/react-dom#0.14.0+20160412154040",
     "stats": "registry:dt/stats#0.16.0+20160505160752"

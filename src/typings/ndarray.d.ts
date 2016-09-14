@@ -7,6 +7,8 @@ declare module 'ndarray' {
       offset: any;
       set(...args): any;
       get(...args): any;
+      lo(...args): any;
+      hi(...args): any;
     }
   }
 

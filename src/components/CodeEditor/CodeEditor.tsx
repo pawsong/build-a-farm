@@ -1,13 +1,41 @@
 import React from 'react';
 import { findDOMNode } from 'react-dom';
+import FloatingActionButton from 'material-ui/FloatingActionButton';
+import PlayArrow from 'material-ui/svg-icons/av/play-arrow';
+import Stop from 'material-ui/svg-icons/av/stop';
 import { Blockly, toolbox } from '../../blockly';
 
 const styles = require('./CodeEditor.css');
 
-class CodeEditor extends React.Component<{}, {}> {
+import VirtualMachine, { CompiledScript } from '../../vm/VirtualMachine';
+
+interface CodeEditorProps {
+  vm: VirtualMachine;
+}
+
+interface CodeEditorState {
+  running?: boolean;
+}
+
+interface ScriptStore {
+  [index: string]: string;
+}
+
+class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
   root: HTMLElement;
   opened: boolean;
   workspace: any;
+  scripts: ScriptStore;
+  objectId: string;
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      running: false,
+    };
+
+    this.scripts = {};
+  }
 
   private componentDidMount() {
     this.root = findDOMNode<HTMLElement>(this.refs['root']);
@@ -15,15 +43,20 @@ class CodeEditor extends React.Component<{}, {}> {
   }
 
   private handleResize = () => {
-
+    if (this.workspace) Blockly.svgResize(this.workspace);
   }
 
-  open() {
+  open(objectId: string) {
     if (this.opened) return;
     this.opened = true;
 
+    this.objectId = objectId;
+
     this.root.style.display = 'block';
     this.workspace = Blockly.inject(this.root, { toolbox });
+    Blockly.JavaScript.init(this.workspace);
+
+    this.props.vm.spawn(this.objectId);
   }
 
   close() {
@@ -34,55 +67,52 @@ class CodeEditor extends React.Component<{}, {}> {
     this.root.style.opacity = `${opacity}`;
   }
 
+  private handlePlay = () => {
+    this.setState({ running: true });
+
+    const dom = Blockly.Xml.workspaceToDom(this.workspace);
+    const xml = Blockly.Xml.domToText(dom);
+
+    const scripts: CompiledScript = {};
+
+    for (const block of this.workspace.getTopBlocks()) {
+      let event;
+
+      switch(block.type) {
+        case 'when_run': {
+          event = 'when_run';
+          break;
+        }
+      }
+
+      if (event) {
+        if (!scripts[event]) scripts[event] = [];
+        const code = Blockly.JavaScript.blockToCode(block);
+        const finalCode = `async () => { ${code} }`;
+        scripts[event].push(finalCode);
+      }
+    };
+
+    this.props.vm.execute(this.objectId, scripts);
+  }
+
+  private handleStop = () => {
+    this.setState({ running: false });
+  }
+
   render() {
     return (
       <div className={styles.root} ref="root">
+        <FloatingActionButton
+          className={styles.actionButton}
+          onTouchTap={this.state.running ? this.handleStop : this.handlePlay}
+          secondary={this.state.running}
+        >
+          {this.state.running ? <Stop /> : <PlayArrow />}
+        </FloatingActionButton>
       </div>
     );
   }
 }
 
 export default CodeEditor;
-
-
-// class Editor {
-//   root: HTMLElement;
-//   opened: boolean;
-//   workspace: any;
-
-//   constructor() {
-//     this.root = document.createElement('div');
-//     this.root.style.position = 'absolute';
-//     this.root.style.top = '10px';
-//     this.root.style.right = '10px';
-//     this.root.style.bottom = '10px';
-//     this.root.style.left = '50%';
-//     this.root.style.zIndex = '1';
-//     this.root.style.display = 'none';
-
-//     document.body.appendChild(this.root);
-
-//     this.opened = false;
-
-//     window.addEventListener('resize', this.handleResize, false);
-//   }
-
-//   handleResize = () => {
-//     if (!this.opened) return;
-//   }
-
-//   open() {
-//     if (this.opened) return;
-
-//     this.root.style.display = 'block';
-//     this.workspace = Blockly.inject(this.root, { toolbox });
-//   }
-
-//   setOpacity(opacity: number) {
-//     this.root.style.opacity = `${opacity}`;
-//   }
-
-//   close() {
-
-//   }
-// }

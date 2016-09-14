@@ -7,3 +7,10 @@
   z-index: 1;
   display: none;
 }
+
+.actionButton {
+  position: absolute;
+  z-index: 1;
+  right: 20px;
+  bottom: 20px;
+}

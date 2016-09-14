@@ -1,5 +1,13 @@
 import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import mat4 from 'gl-matrix/src/gl-matrix/mat4';
+import JSZip from 'jszip';
+
+import Mode from './modes/Mode';
+import FpsMode from './modes/FpsMode';
+import TransitionMode from './modes/TransitionMode';
+import TopDownMode from './modes/TopDownMode';
+
+import PF from 'pathfinding';
 
 const v0 = vec3.create();
 const v1 = vec3.create();
@@ -13,11 +21,17 @@ import Stats from 'stats.js';
 import axios from 'axios';
 import pako from 'pako';
 const msgpack = require('msgpack-lite');
+const cwise = require('cwise');
 
 import Promise from 'bluebird';
 
-const ndarray = require('ndarray');
+import ndarray from 'ndarray';
 const ops = require('ndarray-ops');
+
+import {
+  searchForNearestVoxel1,
+  searchForNearestVoxel7,
+} from './ndops/searchForNearestVoxel';
 
 import {
   Game,
@@ -32,10 +46,17 @@ import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 
 import CodeEditor from '../components/CodeEditor';
 
-const frame = require('file!./models/frame.msgpack');
-const hero = require('file!./models/cube.msgpack');
+const map: string = require('file!./models/map2.msgpack');
+// const map: string = require('file!./models/map.msgpack');
+const hero: string = require('file!./models/cube.msgpack');
+const drop: string = require('file!./models/drop.msgpack');
+const sprout: string = require('file!./models/sprout.msgpack');
 
 const resourceUrl = require('file!./textures/GoodMorningCraftv4.95.zip');
+
+import VirtualMachine from '../vm/VirtualMachine';
+
+import { RAY_MIN_DIST } from './constants';
 
 const CHUNK_SIZE = 32;
 const CHUNK_PAD = 4;
@@ -90,26 +111,38 @@ function fetchChunks(url) {
     });
 }
 
+function fetchTexturePack(url) {
+  return axios.get(url, { responseType: 'arraybuffer' })
+    .then(response => {
+      const zip = new JSZip();
+      return zip.loadAsync(response.data);
+    })
+    .then(zip => {
+      const promises = [];
+      const files = {};
+      zip.forEach((relativePath, file) => {
+        promises.push(file.async('arraybuffer').then(data => files[relativePath] = data));
+      });
+      return Promise.all(promises).then(() => files);
+    });
+}
+
 interface Block {
   id: number;
   name: string;
   texture: string | string[];
   hardness: number;
+  blockModel: any;
 }
 
-var BLOCKS: Block[] = [
+var BLOCKS: any[] = [
   {
     id: 1,
-    name: 'logOak',
-    texture: ['log_oak_top', 'log_oak_top', 'log_oak'],
+    name: 'transparent_wall',
+    // texture: 'air',
     hardness: Infinity,
+    // transparent: true,
   },
-  // {
-  //   id: 1,
-  //   name: 'brick',
-  //   texture: 'brick',
-  //   hardness: Infinity,
-  // },
   {
     id: 2,
     name: 'bedrock',
@@ -118,14 +151,15 @@ var BLOCKS: Block[] = [
   },
   {
     id: 3,
-    name: 'nether_brick',
-    texture: 'nether_brick',
+    name: 'grass',
+    texture: ['grass_top', 'dirt', 'grass_side'],
     hardness: Infinity,
   },
   {
     id: 4,
-    name: 'obsidian',
-    texture: 'obsidian',
+    name: 'logOak',
+    texture: 'brick',
+    // texture: ['log_oak_top', 'log_oak_top', 'log_oak'],
     hardness: Infinity,
   },
   {
@@ -136,37 +170,235 @@ var BLOCKS: Block[] = [
   },
   {
     id: 6,
-    name: 'grass',
-    texture: ['grass_top', 'dirt', 'grass_side'],
+    name: 'hardened_clay_stained_light_blue',
+    texture: 'hardened_clay_stained_light_blue',
     hardness: Infinity,
   },
   {
     id: 7,
+    name: 'farmland_dry',
+    texture: 'farmland_dry',
+    hardness: Infinity,
+  },
+  {
+    id: 8,
+    name: 'wheat_stage_0',
+    texture: 'wheat_stage_0',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'wheat_stage_0',
+      },
+    ],
+    hardness: Infinity,
+  },
+  {
+    id: 9,
+    name: 'wheat_stage_1',
+    texture: 'wheat_stage_1',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'wheat_stage_1',
+      },
+    ],
+    hardness: Infinity,
+  },
+  {
+    id: 10,
+    name: 'wheat_stage_2',
+    texture: 'wheat_stage_2',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'wheat_stage_2',
+      },
+    ],
+    hardness: Infinity,
+  },
+  {
+    id: 11,
+    name: 'wheat_stage_3',
+    texture: 'wheat_stage_3',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'wheat_stage_3',
+      },
+    ],
+    hardness: Infinity,
+  },
+  {
+    id: 12,
+    name: 'wheat_stage_4',
+    texture: 'wheat_stage_4',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'wheat_stage_4',
+      },
+    ],
+    hardness: Infinity,
+  },
+  {
+    id: 13,
+    name: 'wheat_stage_5',
+    texture: 'wheat_stage_5',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'wheat_stage_5',
+      },
+    ],
+    hardness: Infinity,
+  },
+  {
+    id: 14,
+    name: 'wheat_stage_6',
+    texture: 'wheat_stage_6',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'wheat_stage_6',
+      },
+    ],
+    hardness: Infinity,
+  },
+  {
+    id: 15,
     name: 'wheat_stage_7',
     texture: 'wheat_stage_7',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'wheat_stage_7',
+      },
+    ],
     hardness: Infinity,
   },
 ];
 
+const count = cwise({
+  args: ['array', 'scalar'],
+  pre: function () {
+    this.count = 0;
+  },
+  body: function(val, voxelId) {
+    if (val === voxelId) {
+      this.count++;
+    }
+  },
+  post: function () {
+    return this.count;
+  }
+});
+
 interface MainOptions {
   container: HTMLElement;
   codeEditor: CodeEditor;
+  vm: VirtualMachine;
 }
 
 function main ({
   container,
   codeEditor,
+  vm,
 }: MainOptions) {
   Promise.all([
-    fetchChunks(frame),
-    fetchObjectModel(hero),
     Game.initShell(),
-  ]).then(([chunks, {matrix, palette}, shell]) => {
-    shell.on('gl-render', () => {
-      stats.update();
-    });
+    fetchChunks(map),
+    fetchObjectModel(hero),
+    fetchObjectModel(drop),
+    fetchTexturePack(resourceUrl),
+  ]).then(([shell, chunks, {matrix, palette}, dropData, pack]) => {
+    shell.on('gl-render', () => stats.update());
 
-    let camera: Camera = null;
+    const size = chunks.reduce((prev, chunk) => {
+      return [
+        Math.max(chunk.position[0] + 1, prev[0]),
+        Math.max(chunk.position[1] + 1, prev[1]),
+        Math.max(chunk.position[2] + 1, prev[2]),
+      ];
+    }, [0, 0, 0]);
+
+    const ground = ndarray(new Uint32Array(CHUNK_SIZE * size[0] * 1 * CHUNK_SIZE * size[2]), [
+      CHUNK_SIZE * size[0], 1, CHUNK_SIZE * size[2],
+    ]);
+
+    for (const chunk of chunks) {
+      const src = chunk.matrix
+        .lo(CHUNK_PAD_HALF, CHUNK_PAD_HALF, CHUNK_PAD_HALF)
+        .hi(CHUNK_SIZE, 1, CHUNK_SIZE);
+
+      const dest = ground
+        .lo(chunk.position[0] * CHUNK_SIZE, 0, chunk.position[2] * CHUNK_SIZE)
+        .hi(CHUNK_SIZE, 1, CHUNK_SIZE);
+
+      ops.assign(dest, src);
+    }
+
+    const grid = new PF.Grid(ground.shape[0], ground.shape[2]);
+    for (let x = 0; x < ground.shape[0]; ++x) {
+      for (let z = 0; z < ground.shape[2]; ++z) {
+        if (ground.get(x, 0, z) === 6) grid.setWalkableAt(x, z, false);
+      }
+    }
 
     const cache: { [index: string]: any } = {};
 
@@ -179,290 +411,337 @@ function main ({
     });
 
     const game = new Game(shell, {
-      artpacks: [resourceUrl],
+      artpacks: [pack],
       blocks: BLOCKS,
       player: {
         id: '0',
         matrix,
         palette,
       },
-      onUse: (object) => {
-        shell.pointerLock = false;
-        shell.stickyPointerLock = false;
-
-        codeEditor.setOpacity(0);
-        codeEditor.open();
-
-        // Transition for 700 ms
-
-        // TODO: Disable controls
-
-        const fromMatrix = mat4.clone(camera.viewMatrix);
-        const toMatrix = mat4.create();
-
-        const v = vec3.create();
-        const offset = vec3.fromValues(7, 10, 7);
-        const up = vec3.fromValues(0, 1, 0);
-
-        // game.camera.
-        const transitionCamera = new TransitionCamera();
-        transitionCamera.resizeViewport(shell.width, shell.height);
-
-        camera = transitionCamera;
-
-        let accum = 0;
-
-        let lt = performance.now();
-
-        const handlePrerender = () => {
-          const now = performance.now();
-          const dt = now - lt;
-          lt = now;
-
-          accum += dt;
-          const progress = Math.min(accum / 500, 1);
-          codeEditor.setOpacity(progress);
-
-          if (progress === 1) {
-            shell.removeListener('gl-render', handlePrerender);
-            startTopDownMode(object);
-            return;
-          }
-
-          vec3.add(v, object.position, offset);
-          mat4.fromTranslation(toMatrix, v);
-          lookAt(toMatrix, v, object.position, up);
-          mat4.invert(toMatrix, toMatrix);
-
-          transitionCamera.update(fromMatrix, toMatrix, progress, progress * transitionCamera.viewWidth / 4);
-        };
-        shell.on('gl-render', handlePrerender);
-
-        handlePrerender();
+      fpsControlOptions: {
+        discreteFire: false,
+        fireRate: 100, // ms between firing
+        jumpTimer: 25,
+        walkMaxSpeed: Number(0.0056) * 2,
       },
       pluginOpts: {
         'voxel-engine-stackgl': {
           generateChunks: false,
         },
       },
-      // chunkSize: 16,
     });
 
-    const startTopDownMode = (target: GameObject) => {
-      shell.removeListener('gl-render', fpsRender);
+    function findWalkableAdjacent(x: number, z: number) {
+      if (ground.get(x, 0, z) !== 6) return [x, z];
 
-      const topDownCamera = new TopDownCamera(target, 1 / 4);
-      topDownCamera.resizeViewport(shell.width, shell.height);
+      let minDist = Infinity;
+      let ret;
 
-      camera = topDownCamera;
+      for (const point of [
+        [x, z - 1], [x, z + 1], [x - 1, z], [x + 1, z],
+      ]) {
+        const val = ground.get(point[0], 0, point[1]);
 
-      shell.on('gl-render', () => {
-        topDownCamera.update();
-        game.render(topDownCamera);
-      });
-    };
-
-    const a = game.addObject({
-      id: 'a',
-      matrix,
-      palette,
-    });
-    a.avatar.setPosition(6, 10, 2);
-    a.avatar.setScale(1 / 16, 1 / 16, 1 / 16);
-
-    const b = game.addObject({
-      id: 'b',
-      matrix,
-      palette,
-    });
-    b.avatar.setPosition(3, 7, 3);
-    b.avatar.setScale(1 / 16, 1 / 16, 1 / 16);
-    b.avatar.lookAt(vec3.fromValues(3, 7, 100));
-
-    const c = game.addObject({
-      id: 'c',
-      matrix,
-      palette,
-    });
-    c.avatar.setPosition(4, 12, 7);
-    c.avatar.setScale(1 / 16, 1 / 16, 1 / 16);
-    c.avatar.lookAt(vec3.fromValues(4, 14, 100));
-
-    const player = game.getObject('0');
-    player.setScale(1 / 16, 1 / 16, 1 / 16);
-
-    player.on('appear', () => {
-      console.log('good!');
-    });
-
-    const obj = game.getObject('c');
-    obj.on('appear', (object: GameObject) => {
-      if (player === object) {
-        obj.lookAt(object.position);
+        if (val !== 6) {
+          const dx = point[0] - x;
+          const dz = point[1] - z;
+          const distance = dx * dx + dz * dz;
+          if (distance < minDist) {
+            minDist = distance;
+            ret = point;
+          }
+        }
       }
-    });
-
-    const blocks = [
-      game.registry.getBlockIndex(1),
-      game.registry.getBlockIndex(2),
-      game.registry.getBlockIndex(3),
-      game.registry.getBlockIndex(4),
-      game.registry.getBlockIndex(5),
-      game.registry.getBlockIndex(6),
-    ];
-
-    let idx = 0;
-
-    // Draw terrain
-
-    function isChunkAvailable(position) {
-      return position[1] === -1 || position[1] === 0;
+      return ret;
     }
 
-    function getChunk(position) {
-      const blockIndex = blocks[ 5 ];
+    function setBlock(x: number, y: number, z: number, blockId: number) {
+      game.setBlock(x, y, z, blockId);
+      ground.set(x, 0, z, blockId);
+    }
 
-      const width = game.chunkSize;
-      const pad = game.chunkPad;
-      const arrayType = game.arrayType;
+    game.stitcher.once('addedAll', () => {
+      const waterdrop = game.addItem('waterdrop', dropData.matrix, dropData.palette);
 
-      const buffer = new ArrayBuffer((width+pad) * (width+pad) * (width+pad) * arrayType.BYTES_PER_ELEMENT);
-      const voxelsPadded = ndarray(new arrayType(buffer), [width+pad, width+pad, width+pad]);
-      const h = pad >> 1;
-      const voxels = voxelsPadded.lo(h,h,h).hi(width,width,width);
+      function handleUseVoxel(gameObject: GameObject, x: number, y: number, z: number) {
+        const voxelId = game.getVoxel(x, y, z);
 
-      if (position[1] === 0) {
-        for (let x = 0; x < game.chunkSize; ++x) {
-          voxels.set(x, 0, 0, 7);
-        }
-      } else {
-        for (let x = 0; x < game.chunkSize; ++x) {
-          for (let z = 0; z < game.chunkSize; ++z) {
-            for (let y = 0; y < game.chunkSize; ++y) {
-              voxels.set(x, y, z, blockIndex);
+        switch(voxelId) {
+          case 6: {
+            gameObject.holdItem(waterdrop);
+            break;
+          }
+          case 7: {
+            if (gameObject.item === waterdrop) {
+              setBlock(x, y + 1, z, 8);
+              gameObject.throwItem();
             }
+            break;
+          }
+          case 8: {
+            if (gameObject.item === waterdrop) {
+              setBlock(x, y, z, 9);
+              gameObject.throwItem();
+            }
+            break;
+          }
+          case 9: {
+            if (gameObject.item === waterdrop) {
+              setBlock(x, y, z, 10);
+              gameObject.throwItem();
+            }
+            break;
+          }
+          case 10: {
+            if (gameObject.item === waterdrop) {
+              setBlock(x, y, z, 11);
+              gameObject.throwItem();
+            }
+            break;
+          }
+          case 11: {
+            if (gameObject.item === waterdrop) {
+              setBlock(x, y, z, 12);
+              gameObject.throwItem();
+            }
+            break;
+          }
+          case 12: {
+            if (gameObject.item === waterdrop) {
+              setBlock(x, y, z, 13);
+              gameObject.throwItem();
+            }
+            break;
+          }
+          case 13: {
+            if (gameObject.item === waterdrop) {
+              setBlock(x, y, z, 14);
+              gameObject.throwItem();
+            }
+            break;
+          }
+          case 14: {
+            if (gameObject.item === waterdrop) {
+              setBlock(x, y, z, 15);
+              gameObject.throwItem();
+            }
+            break;
           }
         }
       }
 
-      const chunk = voxelsPadded;
-      chunk.position = position;
+      const startTopDownMode = (target: GameObject) => {
 
-      return chunk;
-    }
+      };
 
-    function getCachedChunk(position) {
-      const key = position.join('|');
+      const a = game.addObject({
+        id: 'a',
+        matrix,
+        palette,
+      });
+      a.avatar.setPosition(6, 10, 2);
+      a.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
 
-      const cached = cache[key];
-      if (cached) return cached;
+      const b = game.addObject({
+        id: 'b',
+        matrix,
+        palette,
+      });
+      b.avatar.setPosition(3, 7, 3);
+      b.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      b.avatar.lookAt(vec3.fromValues(3, 7, 100));
 
-      return cache[key] = getChunk(position);
-    }
+      const c = game.addObject({
+        id: 'c',
+        matrix,
+        palette,
+      });
+      c.avatar.setPosition(4, 12, 7);
+      c.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      c.avatar.lookAt(vec3.fromValues(4, 14, 100));
 
-    game.voxels.on('missingChunk', position => {
-      if (!isChunkAvailable(position)) return;
-      console.log(position);
-      game.showChunk(getCachedChunk(position));
-    });
+      const player = game.getObject('0');
+      player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      player.setPosition(35, 2, 61);
+      // player.setPosition(0, 4, 0);
+      player.lookAt(vec3.set(v0, 34, 2, 61));
 
-    // Rendering
+      player.on('appear', () => console.log('good!'));
 
-    const fpsCamera = new FpsCamera(player);
-    fpsCamera.resizeViewport(shell.width, shell.height);
+      const blocks = [
+        game.registry.getBlockIndex(1),
+        game.registry.getBlockIndex(2),
+        game.registry.getBlockIndex(3),
+        game.registry.getBlockIndex(4),
+        game.registry.getBlockIndex(5),
+        game.registry.getBlockIndex(6),
+      ];
 
-    camera = fpsCamera;
+      let idx = 0;
 
-    const ray = createRay([0, 0, 0], [0, 0, 1]);
+      // Draw terrain
 
-    shell.on('gl-resize', () => {
-      camera.resizeViewport(shell.width, shell.height);
-    });
+      function isChunkAvailable(position) {
+        return position[1] === -1 || position[1] === 0;
+      }
 
-    function fpsRender() {
-      fpsCamera.update();
+      function getChunk(position) {
+        const blockIndex = blocks[ 5 ];
 
-      fpsCamera.getPosition(cp);
-      fpsCamera.getVector(cv);
+        const width = game.chunkSize;
+        const pad = game.chunkPad;
+        const arrayType = game.arrayType;
 
-      ray.update(cp, cv);
+        const buffer = new ArrayBuffer((width+pad) * (width+pad) * (width+pad) * arrayType.BYTES_PER_ELEMENT);
+        const voxelsPadded = ndarray(new arrayType(buffer), [width+pad, width+pad, width+pad]);
+        const h = pad >> 1;
+        const voxels = voxelsPadded.lo(h,h,h).hi(width,width,width);
 
-      let minDist = 10 * 10;
-      let focusedObject = null;
-
-      for (const object of game.objects) {
-        if (object === game.target) continue;
-
-        const distance = vec3.squaredDistance(object.position, cp);
-        if (distance > minDist) continue;
-
-        object.getAABB(v0, v1);
-
-        const result = ray.intersects([v0, v1]);
-        if (result) {
-          minDist = distance;
-          focusedObject = object;
+        if (position[1] !== 0) {
+          for (let x = 0; x < game.chunkSize; ++x) {
+            for (let z = 0; z < game.chunkSize; ++z) {
+              for (let y = 0; y < game.chunkSize; ++y) {
+                voxels.set(x, y, z, blockIndex);
+              }
+            }
+          }
         }
+
+        const chunk = voxelsPadded;
+        chunk['position'] = position;
+
+        return chunk;
       }
 
-      game.focusedObject = focusedObject;
-      game.render(camera);
-    }
+      function getCachedChunk(position) {
+        const key = position.join('|');
 
-    shell.on('gl-render', fpsRender);
+        const cached = cache[key];
+        if (cached) return cached;
 
-    const keybindings = {
-      'W': 'forward',
-      'A': 'left',
-      'S': 'backward',
-      'D': 'right',
-      '<up>': 'forward',
-      '<left>': 'left',
-      '<down>': 'backward',
-      '<right>': 'right',
-      '<mouse 1>': 'fire',
-      '<mouse 3>': 'firealt',
-      '<space>': 'jump',
-      '<shift>': 'crouch',
-      '<control>': 'alt',
-      '<tab>': 'sprint',
-    };
-
-    // cleanup key name - based on https://github.com/mikolalysenko/game-shell/blob/master/shell.js
-    const filtered_vkey = function(k) {
-      if(k.charAt(0) === '<' && k.charAt(k.length-1) === '>') {
-        k = k.substring(1, k.length-1)
+        return cache[key] = getChunk(position);
       }
-      k = k.replace(/\s/g, "-")
-      return k
-    }
 
-    // initial keybindings passed in from options
-    for (const key in keybindings) {
-      const name = keybindings[key]
+      game.voxels.on('missingChunk', position => {
+        if (!isChunkAvailable(position)) return;
+        game.showChunk(getCachedChunk(position));
+      });
 
-      // translate name for game-shell
-      shell.bind(name, filtered_vkey(key))
-    }
+      const finder = new PF.AStarFinder();
 
-    const buttons = {};
+      vm.on('message', (message) => {
+        const object = game.getObject(message.objectId);
 
-    Object.keys(shell.bindings).forEach(name => {
-      Object.defineProperty(buttons, name, {
-        get: () => shell.pointerLock && shell.wasDown(name),
-      })
-    })
+        switch(message.type) {
+          case 'getNearestVoxels': {
+            const { params: vids } = message;
+            const { position } = object;
 
-    const controls = new FpsControl(buttons, shell, {
-      discreteFire: false,
-      fireRate: 100, // ms between firing
-      jumpTimer: 25,
-      walkMaxSpeed: Number(0.0056) * 2,
-    });
-    controls.target(player.physics, player, fpsCamera.camera);
+            console.log(position);
 
-    game.on('tick', dt => {
-      controls.tick(dt);
+            switch(vids.length) {
+              case 1: {
+                const result = searchForNearestVoxel1(ground, position[0], position[2], vids[0]);
+                if (!result) break;
+
+                const [voxelId, p0, p1] = result;
+                vm.postMessage(message.objectId, message.requestId, [
+                  p0, [8, 9, 10, 11, 12, 13, 14, 15].indexOf(voxelId) === -1 ? 0 : 1, p1,
+                ]);
+                break;
+              }
+              case 7: {
+                const result = searchForNearestVoxel7(ground, position[0], position[2],
+                  vids[0], vids[1], vids[2], vids[3], vids[4], vids[5], vids[6]
+                );
+                if (!result) break;
+
+                const [voxelId, p0, p1] = result;
+                vm.postMessage(message.objectId, message.requestId, [
+                  p0, [8, 9, 10, 11, 12, 13, 14, 15].indexOf(voxelId) === -1 ? 0 : 1, p1,
+                ]);
+                break;
+              }
+            }
+            break;
+          }
+          case 'moveTo': {
+            const { params } = message;
+            const { position } = object;
+
+            const point = findWalkableAdjacent(params[0], params[2]);
+
+            const path = finder.findPath(
+              Math.round(position[0]), Math.round(position[2]),
+              point[0], point[1],
+              grid.clone()
+            );
+
+            const pathLastIndex = path.length - 1;
+            const finalPath = path.map((point, index) => [point[0], 1, point[1]]);
+            finalPath.push(params);
+
+            object.move(finalPath).then(() => {
+              vm.postMessage(message.objectId, message.requestId);
+            });
+            break;
+          }
+          case 'use': {
+            const { lastReq } = message;
+            if (lastReq && lastReq.type === 'moveTo') {
+              const position = lastReq.params;
+              handleUseVoxel(object, position[0], position[1], position[2]);
+            } else {
+              vec3.copy(cp, object.position);
+              cp[1] += 1;
+
+              const result = game.raycastVoxels(cp, object.getDirection(cv), RAY_MIN_DIST, v0, v1);
+
+              if (result !== 0) {
+                handleUseVoxel(object,
+                  Math.round(v0[0] - v1[0]),
+                  Math.round(v0[1] - v1[1]),
+                  Math.round(v0[2] - v1[2])
+                );
+              }
+            }
+            vm.postMessage(message.objectId, message.requestId);
+            break;
+          }
+        }
+      });
+
+      // Rendering
+
+      const fpsMode = new FpsMode(game, player);
+      const transitionMode = new TransitionMode(game, codeEditor);
+      const topDownMode = new TopDownMode(game);
+
+      let activeMode: Mode = fpsMode;
+      fpsMode.start();
+
+      shell.on('gl-resize', () => activeMode.onResize());
+      shell.on('gl-render', () => activeMode.onRender());
+
+      game.on('tick', dt => activeMode.onTick(dt));
+      game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position[0], position[1], position[2]));
+      game.on('use', (object: GameObject) => {
+        codeEditor.setOpacity(0);
+        codeEditor.open(object.id);
+
+        // Transition for 700 ms
+
+        activeMode = transitionMode;
+        transitionMode.start(object, fpsMode.camera.viewMatrix, (succeeded: boolean) => {
+          if (succeeded) {
+            activeMode = topDownMode;
+            topDownMode.start(transitionMode.target);
+            topDownMode.onRender();
+          } else {
+            // TODO: Handle succeeded === false. Cancelled case.
+          }
+        });
+      });
     });
   });
 }
