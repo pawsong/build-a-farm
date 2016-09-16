@@ -1,7 +1,13 @@
 import { EventEmitter } from 'events';
+import ThreadPool, {
+  Thread,
+} from './ThreadPool';
+import {
+  MW_INIT,
+  MW_RESPONSE,
+} from './shared';
 
 const ScriptWorker = require('worker!./worker');
-type AbstractWorke = AbstractWorker;
 
 export interface CompiledScript {
   [index: string]: string[];
@@ -9,43 +15,59 @@ export interface CompiledScript {
 
 // Worker ID, Request ID
 class VirtualMachine extends EventEmitter {
-  workers: Map<string, Worker>;
+  pool: ThreadPool;
+  threads: Map<string, Thread>;
 
   constructor() {
     super();
-    this.workers = new Map();
+    this.pool = new ThreadPool();
+    this.threads = new Map();
   }
 
-  spawn(objectId: string) {
-    if (this.workers.has(objectId)) {
-      this.workers.get(objectId).terminate();
+  stop(objectId: string) {
+    const thread = this.threads.get(objectId);
+    if (thread) {
+      this.pool.free(thread);
+      this.threads.delete(objectId);
     }
+  }
 
-    const worker: Worker = new ScriptWorker();
-    this.workers.set(objectId, worker);
-
-    return worker;
+  private initThread(objectId: string) {
+    const thread = this.threads.get(objectId);
+    if (thread) {
+      thread.removeAllListeners();
+      thread.restart();
+      return thread;
+    } else {
+      const thread = this.pool.allocate();
+      this.threads.set(objectId, thread);
+      thread.start();
+      return thread;
+    }
   }
 
   execute(objectId: string, scripts: CompiledScript) {
-    const worker = this.workers.get(objectId);
+    const thread = this.initThread(objectId);
 
-    worker.onmessage = (e) => {
-      const { requestId, type, params, lastReq } = e.data;
+    thread.addListener('message', (data) => {
+      const { requestId, type, params, lastReq } = data;
       this.emit('message', {
         objectId, requestId,
         type, params, lastReq,
       });
-    };
+    });
 
-    worker.postMessage({ type: 'init', objectId, scripts });
-
-    return worker;
+    thread.postMessage({ type: MW_INIT, objectId, scripts });
+    return thread;
   }
 
-  postMessage(objectId: string, requestId: number, response?: any) {
-    const worker = this.workers.get(objectId);
-    worker.postMessage({ type: 'resp', requestId, response });
+  isRunning(objectId: string) {
+    return this.threads.has(objectId);
+  }
+
+  sendResponse(objectId: string, requestId: number, response?: any) {
+    const worker = this.threads.get(objectId);
+    worker.postMessage({ type: MW_RESPONSE, requestId, response });
   }
 }
 

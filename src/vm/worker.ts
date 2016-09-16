@@ -1,11 +1,16 @@
-console.log(0, performance.now());
-
 import 'babel-polyfill';
 
 import ndarray from 'ndarray';
-const Babel = require('babel-standalone');
+const babel = require('babel-standalone');
 
 import { WorkerGlobalScope } from './types';
+import {
+  MW_INIT,
+  MW_RESPONSE,
+  MW_STOP,
+  WM_HEARTBEAT,
+  HEARTBEAT_INTERVAL,
+} from './shared';
 
 declare const self: WorkerGlobalScope;
 
@@ -17,37 +22,6 @@ interface Request {
 interface RequestInfo {
   type: string;
   params: any;
-}
-
-self.onmessage = e => {
-  switch(e.data.type) {
-    case 'init': {
-      const { objectId, scripts } = e.data;
-
-      const compiled = {};
-      const events = Object.keys(scripts);
-
-      for (const event of events) {
-        const compiledFuncs = [];
-        const list = scripts[event];
-
-        for (const script of list) {
-          const result = Babel.transform(script, { presets: ['stage-0', 'es2015'] });
-          compiledFuncs.push(eval(result.code));
-        }
-        compiled[event] = compiledFuncs;
-      }
-
-      for (const func of compiled['when_run']) func();
-      break;
-    }
-    case 'resp': {
-      const { requestId, response } = e.data;
-      const { resolve } = requests.get(requestId);
-      resolve(response);
-      break;
-    }
-  }
 }
 
 let lastReq: RequestInfo = null;
@@ -76,4 +50,53 @@ self['moveTo'] = function moveTo(position) {
 
 self['use'] = function use() {
   return new Promise((resolve, reject) => request(resolve, reject, 'use'));
+}
+
+// setInterval(() => {
+//   self.postMessage({ type: WM_HEARTBEAT });
+// }, HEARTBEAT_INTERVAL);
+
+// Handler
+function stop() {
+  requests.clear();
+}
+
+self.onmessage = e => {
+  switch(e.data.type) {
+    case MW_INIT: {
+      stop();
+
+      const { objectId, scripts } = e.data;
+
+      const compiled = {};
+      const events = Object.keys(scripts);
+
+      for (const event of events) {
+        const compiledFuncs = [];
+        const list = scripts[event];
+
+        for (const script of list) {
+          const result = babel.transform(script, { presets: ['stage-0', 'es2015'] });
+          compiledFuncs.push(eval(result.code));
+        }
+        compiled[event] = compiledFuncs;
+      }
+
+      for (const func of compiled['when_run']) func();
+      break;
+    }
+    case MW_RESPONSE: {
+      const { requestId, response } = e.data;
+      const request = requests.get(requestId);
+      if (request) {
+        const { resolve } = request;
+        resolve(response);
+      }
+      break;
+    }
+    case MW_STOP: {
+      stop();
+      break;
+    }
+  }
 }

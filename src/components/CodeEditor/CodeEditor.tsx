@@ -49,7 +49,9 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
   open(objectId: string) {
     if (this.opened) return;
     this.opened = true;
-    this.setState({ running: false });
+
+    const running = this.props.vm.isRunning(objectId);
+    if (this.state.running !== running) this.setState({ running });
 
     this.objectId = objectId;
 
@@ -59,8 +61,6 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
       this.workspace = Blockly.inject(this.root, { toolbox });
       Blockly.JavaScript.init(this.workspace);
     }
-
-    this.props.vm.spawn(this.objectId);
   }
 
   close() {
@@ -73,9 +73,17 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
     this.root.style.opacity = `${opacity}`;
   }
 
-  private handlePlay = () => {
-    this.setState({ running: true });
+  private handleToggleScript = () => {
+    if (this.state.running) {
+      this.setState({ running: false });
+      this.stop();
+    } else {
+      this.setState({ running: true });
+      this.play();
+    }
+  }
 
+  private play() {
     const dom = Blockly.Xml.workspaceToDom(this.workspace);
     const xml = Blockly.Xml.domToText(dom);
 
@@ -102,8 +110,8 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
     this.props.vm.execute(this.objectId, scripts);
   }
 
-  private handleStop = () => {
-    this.setState({ running: false });
+  private stop() {
+    this.props.vm.stop(this.objectId);
   }
 
   render() {
@@ -111,7 +119,7 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
       <div className={styles.root} ref="root">
         <FloatingActionButton
           className={styles.actionButton}
-          onTouchTap={this.state.running ? this.handleStop : this.handlePlay}
+          onTouchTap={this.handleToggleScript}
           secondary={this.state.running}
         >
           {this.state.running ? <Stop /> : <PlayArrow />}

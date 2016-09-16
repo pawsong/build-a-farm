@@ -52,7 +52,7 @@ import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 
 import CodeEditor from '../components/CodeEditor';
 
-const map: string = require('file!./models/map2.msgpack');
+const map: string = require('file!./models/map.msgpack');
 // const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
 const drop: string = require('file!./models/drop.msgpack');
@@ -337,6 +337,25 @@ var BLOCKS: any[] = [
     ],
     hardness: Infinity,
   },
+  {
+    id: 16,
+    name: 'flower_tulip_orange',
+    texture: 'flower_tulip_orange',
+    blockModel: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faceData: {
+          north: {},
+          south: {},
+          west: {},
+          east: {}
+        },
+        texture: 'flower_tulip_orange',
+      },
+    ],
+    hardness: Infinity,
+  },
 ];
 
 const count = cwise({
@@ -544,26 +563,27 @@ function main ({
         matrix,
         palette,
       });
-      a.avatar.setPosition(6, 10, 2);
+      a.avatar.setPosition(7, 10, 33);
       a.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      a.avatar.lookAt(vec3.fromValues(8, 10, 33));
 
       const b = game.addObject({
         id: 'b',
         matrix,
         palette,
       });
-      b.avatar.setPosition(3, 7, 3);
+      b.avatar.setPosition(9, 7, 30);
       b.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      b.avatar.lookAt(vec3.fromValues(3, 7, 100));
+      b.avatar.lookAt(vec3.fromValues(10, 7, 30));
 
       const c = game.addObject({
         id: 'c',
         matrix,
         palette,
       });
-      c.avatar.setPosition(4, 12, 7);
+      c.avatar.setPosition(11, 12, 36);
       c.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      c.avatar.lookAt(vec3.fromValues(4, 14, 100));
+      c.avatar.lookAt(vec3.fromValues(12, 12, 36));
 
       const player = game.getObject('0');
       player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
@@ -648,7 +668,7 @@ function main ({
                 if (!result) break;
 
                 const [voxelId, p0, p1] = result;
-                vm.postMessage(message.objectId, message.requestId, [
+                vm.sendResponse(message.objectId, message.requestId, [
                   p0, [8, 9, 10, 11, 12, 13, 14, 15].indexOf(voxelId) === -1 ? 0 : 1, p1,
                 ]);
                 break;
@@ -660,7 +680,7 @@ function main ({
                 if (!result) break;
 
                 const [voxelId, p0, p1] = result;
-                vm.postMessage(message.objectId, message.requestId, [
+                vm.sendResponse(message.objectId, message.requestId, [
                   p0, [8, 9, 10, 11, 12, 13, 14, 15].indexOf(voxelId) === -1 ? 0 : 1, p1,
                 ]);
                 break;
@@ -685,7 +705,7 @@ function main ({
             finalPath.push(params);
 
             object.move(finalPath).then(() => {
-              vm.postMessage(message.objectId, message.requestId);
+              vm.sendResponse(message.objectId, message.requestId);
             });
             break;
           }
@@ -708,7 +728,7 @@ function main ({
                 );
               }
             }
-            vm.postMessage(message.objectId, message.requestId);
+            vm.sendResponse(message.objectId, message.requestId);
             break;
           }
         }
