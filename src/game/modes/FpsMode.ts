@@ -127,9 +127,11 @@ class FpsMode extends ModeState<void> {
       const distance = vec3.squaredDistance(object.position, cp);
       if (distance > minDist) continue;
 
-      object.getAABB(v0, v1);
+      const result = this.ray.intersects([
+        object.physics.aabb.base,
+        object.physics.aabb.max,
+      ]);
 
-      const result = this.ray.intersects([v0, v1]);
       if (result) {
         minDist = distance;
         focusedObject = object;

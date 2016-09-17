@@ -424,14 +424,14 @@ function main ({
       }
     }
 
-    const cache: { [index: string]: any } = {};
+    const cache = new Map();
 
     chunks.forEach(chunk => {
       const { matrix, position } = chunk;
       matrix.position = position;
 
       const key = position.join('|');
-      cache[key] = chunk.matrix;
+      cache.set(key, chunk.matrix);
     });
 
     const game = new Game(shell, {
@@ -641,11 +641,15 @@ function main ({
       function getCachedChunk(position) {
         const key = position.join('|');
 
-        const cached = cache[key];
+        const cached = cache.get(key);
         if (cached) return cached;
 
-        return cache[key] = getChunk(position);
+        const chunk = getChunk(position);
+        cache.set(key, chunk);
+        return chunk;
       }
+
+      cache.forEach(chunk => game.showChunk(chunk));
 
       game.voxels.on('missingChunk', position => {
         if (!isChunkAvailable(position)) return;
