@@ -52,6 +52,10 @@ self['use'] = function use() {
   return new Promise((resolve, reject) => request(resolve, reject, 'use'));
 }
 
+self['jump'] = function jump() {
+  return new Promise((resolve, reject) => request(resolve, reject, 'jump'));
+}
+
 // setInterval(() => {
 //   self.postMessage({ type: WM_HEARTBEAT });
 // }, HEARTBEAT_INTERVAL);

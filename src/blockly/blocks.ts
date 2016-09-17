@@ -175,3 +175,23 @@ Blockly.Blocks['use'] = {
 Blockly.JavaScript['use'] = block => {
   return `await use();\n`;
 };
+
+/**
+ * use block
+ */
+Blockly.Blocks['jump'] = {
+  init: function() {
+    this.setColour(cyanA700);
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setInputsInline(false);
+
+    this.appendDummyInput().appendField('jump');
+
+    this.setTooltip('jump');
+  }
+};
+
+Blockly.JavaScript['jump'] = block => {
+  return `await jump();\n`;
+};

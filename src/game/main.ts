@@ -563,27 +563,27 @@ function main ({
         matrix,
         palette,
       });
-      a.avatar.setPosition(7, 10, 33);
-      a.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      a.avatar.lookAt(vec3.fromValues(8, 10, 33));
+      a.setPosition(7, 2, 33);
+      a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      a.lookAt(vec3.fromValues(8, 2, 33));
 
       const b = game.addObject({
         id: 'b',
         matrix,
         palette,
       });
-      b.avatar.setPosition(9, 7, 30);
-      b.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      b.avatar.lookAt(vec3.fromValues(10, 7, 30));
+      b.setPosition(9, 7, 30);
+      b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      b.lookAt(vec3.fromValues(10, 7, 30));
 
       const c = game.addObject({
         id: 'c',
         matrix,
         palette,
       });
-      c.avatar.setPosition(11, 12, 36);
-      c.avatar.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      c.avatar.lookAt(vec3.fromValues(12, 12, 36));
+      c.setPosition(11, 4, 36);
+      c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      c.lookAt(vec3.fromValues(12, 4, 36));
 
       const player = game.getObject('0');
       player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
@@ -705,7 +705,7 @@ function main ({
             );
 
             const pathLastIndex = path.length - 1;
-            const finalPath = path.map((point, index) => [point[0], 1, point[1]]);
+            const finalPath = path.map((point, index) => [point[0], position[1], point[1]]);
             finalPath.push(params);
 
             object.move(finalPath).then(() => {
@@ -734,6 +734,14 @@ function main ({
             }
             vm.sendResponse(message.objectId, message.requestId);
             break;
+          }
+          case 'jump': {
+            const { params } = message;
+            const { position } = object;
+
+            object.jump().then(() => {
+              vm.sendResponse(message.objectId, message.requestId);
+            });
           }
         }
       });
