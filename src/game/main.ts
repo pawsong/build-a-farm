@@ -59,6 +59,8 @@ const drop: string = require('file!./models/drop.msgpack');
 const sprout: string = require('file!./models/sprout.msgpack');
 
 const resourceUrl = require('file!./textures/GoodMorningCraftv4.95.zip');
+const iconExclamationMarkUrl = require('./textures/icon_exclamation_mark.png');
+const iconQuestionMarkUrl = require('./textures/icon_question_mark.png');
 
 import VirtualMachine from '../vm/VirtualMachine';
 
@@ -131,6 +133,15 @@ function fetchTexturePack(url) {
       });
       return Promise.all(promises).then(() => files);
     });
+}
+
+function fetchNonBlockTexture(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = (e) => resolve(image);
+    image.onerror = (e) => reject(new Error('Image load failed'))
+    image.src = url;
+  });
 }
 
 interface Block {
@@ -390,7 +401,19 @@ function main ({
     fetchObjectModel(hero),
     fetchObjectModel(drop),
     fetchTexturePack(resourceUrl),
-  ]).then(([shell, chunks, {matrix, palette}, dropData, pack]) => {
+    fetchNonBlockTexture(iconExclamationMarkUrl),
+    fetchNonBlockTexture(iconQuestionMarkUrl),
+  ]).then(result => {
+    const [
+      shell,
+      chunks,
+      {matrix, palette},
+      dropData,
+      pack,
+      iconExclamationMarkImage,
+      iconQuestionMarkImage,
+    ] = <any> result;
+
     shell.on('gl-render', () => stats.update());
 
     const size = chunks.reduce((prev, chunk) => {
@@ -485,6 +508,13 @@ function main ({
     }
 
     game.stitcher.once('addedAll', () => {
+      game.stitcher.addNonBlockTexture('icon_exclamation_mark', iconExclamationMarkImage);
+      game.stitcher.addNonBlockTexture('icon_question_mark', iconQuestionMarkImage);
+
+      game.stitcher.updateTextureSideID();
+
+      const sprite = game.sprites.register('icon_exclamation_mark');
+
       const waterdrop = game.addItem('waterdrop', dropData.matrix, dropData.palette);
 
       function handleUseVoxel(gameObject: GameObject, x: number, y: number, z: number) {
@@ -554,10 +584,6 @@ function main ({
         }
       }
 
-      const startTopDownMode = (target: GameObject) => {
-
-      };
-
       const a = game.addObject({
         id: 'a',
         matrix,
@@ -566,6 +592,7 @@ function main ({
       a.setPosition(7, 2, 33);
       a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       a.lookAt(vec3.fromValues(8, 2, 33));
+      a.addSprite(sprite);
 
       const b = game.addObject({
         id: 'b',
@@ -761,6 +788,8 @@ function main ({
       game.on('tick', dt => fsm.current.onTick(dt));
       game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position[0], position[1], position[2]));
     });
+  }).catch(err => {
+    console.error(err);
   });
 }
 
