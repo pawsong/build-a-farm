@@ -63,6 +63,7 @@
     "babel-preset-stage-0": "^6.5.0",
     "babel-standalone": "^6.15.0",
     "bluebird": "^3.4.5",
+    "classnames": "^2.2.5",
     "cwise": "^1.0.9",
     "jszip": "^3.1.2",
     "material-ui": "^0.15.4",

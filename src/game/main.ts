@@ -50,10 +50,10 @@ import TransitionCamera from '@buffy/voxel-engine/lib/cameras/TransitionCamera';
 import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
 import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 
+import Overlay from '../components/Overlay';
 import CodeEditor from '../components/CodeEditor';
 
 const map: string = require('file!./models/map.msgpack');
-// const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
 const drop: string = require('file!./models/drop.msgpack');
 const sprout: string = require('file!./models/sprout.msgpack');
@@ -61,6 +61,8 @@ const sprout: string = require('file!./models/sprout.msgpack');
 const resourceUrl = require('file!./textures/GoodMorningCraftv4.95.zip');
 const iconExclamationMarkUrl = require('./textures/icon_exclamation_mark.png');
 const iconQuestionMarkUrl = require('./textures/icon_question_mark.png');
+const iconPlusOneUrl = require('./textures/icon_plus_one.png');
+const itemWheatUrl = require('./textures/item_wheat.png');
 
 import VirtualMachine from '../vm/VirtualMachine';
 
@@ -386,12 +388,14 @@ const count = cwise({
 
 interface MainOptions {
   container: HTMLElement;
+  overlay: Overlay;
   codeEditor: CodeEditor;
   vm: VirtualMachine;
 }
 
 function main ({
   container,
+  overlay,
   codeEditor,
   vm,
 }: MainOptions) {
@@ -403,6 +407,8 @@ function main ({
     fetchTexturePack(resourceUrl),
     fetchNonBlockTexture(iconExclamationMarkUrl),
     fetchNonBlockTexture(iconQuestionMarkUrl),
+    fetchNonBlockTexture(iconPlusOneUrl),
+    fetchNonBlockTexture(itemWheatUrl),
   ]).then(result => {
     const [
       shell,
@@ -412,6 +418,8 @@ function main ({
       pack,
       iconExclamationMarkImage,
       iconQuestionMarkImage,
+      iconPlusOneImage,
+      itemWheatImage,
     ] = <any> result;
 
     shell.on('gl-render', () => stats.update());
@@ -510,10 +518,16 @@ function main ({
     game.stitcher.once('addedAll', () => {
       game.stitcher.addNonBlockTexture('icon_exclamation_mark', iconExclamationMarkImage);
       game.stitcher.addNonBlockTexture('icon_question_mark', iconQuestionMarkImage);
+      game.stitcher.addNonBlockTexture('icon_plus_one', iconPlusOneImage);
+      game.stitcher.addNonBlockTexture('item_wheat', itemWheatImage);
 
       game.stitcher.updateTextureSideID();
 
-      const sprite = game.sprites.register('icon_exclamation_mark');
+      const sprite = game.sprites.register('icon_exclamation_mark', [1, 1], ['icon_exclamation_mark']);
+      const sprite2 = game.sprites.register('wheat_plus_one', [2, 1], [
+        'item_wheat',
+        'icon_plus_one',
+      ], 0.5);
 
       const waterdrop = game.addItem('waterdrop', dropData.matrix, dropData.palette);
 
@@ -581,8 +595,23 @@ function main ({
             }
             break;
           }
+          case 15: {
+            setBlock(x, y, z, 0);
+            game.effectManager.add(x + 0.5, y + 0.5 + 0.5, z + 0.5, sprite2);
+          }
         }
       }
+
+      const helper = game.addObject({
+        id: 'helper',
+        matrix,
+        palette,
+      });
+      helper.setPosition(20, 2, 38);
+      helper.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      // helper.lookAt(vec3.fromValues(8, 2, 33));
+      helper.addSprite(sprite);
+      // helper.on('appear', () => console.log('good!'));
 
       const a = game.addObject({
         id: 'a',
@@ -617,8 +646,6 @@ function main ({
       player.setPosition(35, 2, 61);
       // player.setPosition(0, 4, 0);
       player.lookAt(vec3.set(v0, 34, 2, 61));
-
-      player.on('appear', () => console.log('good!'));
 
       const blocks = [
         game.registry.getBlockIndex(1),
@@ -785,8 +812,13 @@ function main ({
 
       shell.on('gl-resize', () => fsm.current.onResize());
       shell.on('gl-render', () => fsm.current.onRender());
-      game.on('tick', dt => fsm.current.onTick(dt));
+      game.on('tick', dt => {
+        helper.lookAt(player.position);
+        fsm.current.onTick(dt);
+      });
       game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position[0], position[1], position[2]));
+
+      overlay.hide();
     });
   }).catch(err => {
     console.error(err);
