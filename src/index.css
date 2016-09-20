@@ -5,3 +5,10 @@ body {
   overflow: hidden;
   height: 100%;
 }
+
+@font-face {
+  font-family: Silkscreen;
+  src: url(./fonts/slkscr.ttf) format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}

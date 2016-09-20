@@ -52,6 +52,7 @@ import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 
 import Overlay from '../components/Overlay';
 import CodeEditor from '../components/CodeEditor';
+import StatusPanel from '../components/StatusPanel';
 
 const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
@@ -371,6 +372,8 @@ var BLOCKS: any[] = [
   },
 ];
 
+let cropCount = 0;
+
 const count = cwise({
   args: ['array', 'scalar'],
   pre: function () {
@@ -390,6 +393,7 @@ interface MainOptions {
   container: HTMLElement;
   overlay: Overlay;
   codeEditor: CodeEditor;
+  statusPanel: StatusPanel;
   vm: VirtualMachine;
 }
 
@@ -397,6 +401,7 @@ function main ({
   container,
   overlay,
   codeEditor,
+  statusPanel,
   vm,
 }: MainOptions) {
   Promise.all([
@@ -598,6 +603,9 @@ function main ({
           case 15: {
             setBlock(x, y, z, 0);
             game.effectManager.add(x + 0.5, y + 0.5 + 0.5, z + 0.5, sprite2);
+
+            cropCount = cropCount + 1;
+            statusPanel.setCropCount(cropCount);
           }
         }
       }
