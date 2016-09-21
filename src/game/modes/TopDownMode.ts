@@ -5,10 +5,7 @@ import {
   TopDownCamera,
 } from '@buffy/voxel-engine';
 
-import ModeFsm, {
-  ModeState,
-  STATE_TO_FPS,
-} from './ModeFsm';
+import ModeFsm, { ModeState } from './ModeFsm';
 
 interface Params {
   target: GameObject;
@@ -52,7 +49,7 @@ class TopDownMode extends ModeState<Params> {
   handleKeydown = (e: KeyboardEvent) => {
     if (e.keyCode !== 27 /* ESC */) return;
 
-    this.transitionTo(STATE_TO_FPS, {
+    this.transitionTo(this.fsm.states.toFpsMode, {
       viewMatrix: this.camera.viewMatrix,
     });
   }

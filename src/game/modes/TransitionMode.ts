@@ -6,10 +6,7 @@ import GameObject from '@buffy/voxel-engine/lib/GameObject';
 import TransitionCamera from '@buffy/voxel-engine/lib/cameras/TransitionCamera';
 import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 
-import ModeFsm, {
-  ModeState,
-  STATE_TOP_DOWN,
-} from './ModeFsm';
+import ModeFsm, { ModeState } from './ModeFsm';
 
 import CodeEditor from '../../components/CodeEditor';
 
@@ -82,7 +79,7 @@ class TransitionMode extends ModeState<Params> {
     this.accum += dt;
 
     if (this.accum > DURATION) {
-      this.transitionTo(STATE_TOP_DOWN, {
+      this.transitionTo(this.fsm.states.topDownMode, {
         target: this.target,
       });
     }

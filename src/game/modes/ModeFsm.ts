@@ -1,45 +1,32 @@
-export abstract class ModeState<T> {
-  fsm: ModeFsm;
-  constructor(fsm: ModeFsm) {
-    this.fsm = fsm;
-  }
+import { Fsm, State } from '../../fsm';
+import FpsMode from './FpsMode';
+import TransitionMode from './TransitionMode';
+import TopDownMode from './TopDownMode';
+import ToFpsMode from './ToFpsMode';
 
-  transitionTo(state: string, params?: any) {
-    this.fsm.transitionTo(state, params);
-  }
-
-  abstract onEnter(params?: T);
+abstract class ModeState<T> extends State<T, ModeFsm> {
   abstract onResize();
   abstract onRender();
   abstract onTick(dt: number);
-  abstract onLeave();
 }
 
-class ModeFsm {
+interface States {
+  fpsMode: FpsMode;
+  transitionMode: TransitionMode;
+  topDownMode: TopDownMode;
+  toFpsMode: ToFpsMode;
+}
+
+class ModeFsm extends Fsm {
+  states: States;
   current: ModeState<any>;
-  registry: Map<string, ModeState<any>>;
 
-  constructor() {
-    this.registry = new Map();
-  }
-
-  register(stateName: string, state: ModeState<any>) {
-    this.registry.set(stateName, state);
-  }
-
-  transitionTo(state: string, params?: any) {
-    if (!this.registry.has(state)) {
-      throw new Error(`State not exist: ${state}`);
-    }
-    if (this.current) this.current.onLeave();
-    this.current = this.registry.get(state);
-    this.current.onEnter(params);
+  init(states: States, current: ModeState<any>) {
+    this.states = states;
+    this.current = current;
+    this.current.onEnter();
   }
 }
 
+export { ModeState }
 export default ModeFsm;
-
-export const STATE_FPS = 'STATE_FPS';
-export const STATE_TRANSITION = 'STATE_TRANSITION';
-export const STATE_TOP_DOWN = 'STATE_TOP_DOWN';
-export const STATE_TO_FPS = 'STATE_TO_FPS';

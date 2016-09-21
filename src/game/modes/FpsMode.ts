@@ -2,10 +2,12 @@ import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import mat4 from 'gl-matrix/src/gl-matrix/mat4';
 const createRay = require('ray-aabb');
 
-import ModeFsm, {
-  ModeState,
-  STATE_TRANSITION,
-} from './ModeFsm';
+import ModeFsm, { ModeState } from './ModeFsm';
+
+// import ModeFsm, {
+//   ModeState,
+//   STATE_TRANSITION,
+// } from './ModeFsm';
 
 import {
   Game,
@@ -30,16 +32,19 @@ const focusedVoxel = vec3.create();
 class FpsMode extends ModeState<void> {
   game: Game;
 
+  helper: GameObject;
+
   camera: FpsCamera;
   ray: any;
   controls: FpsControl;
 
-  constructor(fsm: ModeFsm, game: Game, player: GameObject) {
+  constructor(fsm: ModeFsm, game: Game, player: GameObject, helper: GameObject) {
     super(fsm);
 
     this.game = game;
 
     const { shell } = game;
+    this.helper = helper;
 
     this.ray = createRay([0, 0, 0], [0, 0, 1]);
     this.camera = new FpsCamera(player);
@@ -165,10 +170,14 @@ class FpsMode extends ModeState<void> {
     this.game.removeListener('use', this.handleUse);
   }
 
-  handleUse = (target: GameObject) => this.transitionTo(STATE_TRANSITION, {
-    target,
-    viewMatrix: this.camera.viewMatrix,
-  });
+  handleUse = (target: GameObject) => {
+    if (this.helper !== target) {
+      this.transitionTo(this.fsm.states.transitionMode, {
+        target,
+        viewMatrix: this.camera.viewMatrix,
+      });
+    }
+  };
 }
 
 export default FpsMode;
