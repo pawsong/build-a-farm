@@ -127,7 +127,7 @@ class FpsMode extends ModeState<void> {
     let focusedObject = null;
 
     for (const object of this.game.objects) {
-      if (object === this.game.target) continue;
+      if (object === this.camera.camera.parent) continue;
 
       const distance = vec3.squaredDistance(object.position, cp);
       if (distance > minDist) continue;

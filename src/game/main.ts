@@ -204,7 +204,7 @@ function main ({
       chunks,
       {matrix, palette},
       helperModelData,
-      dropData,
+      waterDropData,
       pack,
       iconExclamationMarkImage,
       iconQuestionMarkImage,
@@ -227,11 +227,6 @@ function main ({
     const game = new Game(shell, {
       artpacks: [pack],
       blocks: BLOCKS,
-      player: {
-        id: '0',
-        matrix,
-        palette,
-      },
       fpsControlOptions: {
         discreteFire: false,
         fireRate: 100, // ms between firing
@@ -244,6 +239,10 @@ function main ({
         },
       },
     });
+
+    const cubieModel = game.addModel('cubie', matrix, palette);
+    const helperModel = game.addModel('helper', helperModelData.matrix, helperModelData.palette);
+    const waterDropModel = game.addModel('waterdrop', waterDropData.matrix, waterDropData.palette);
 
     const mapService = new MapService(game, chunks);
 
@@ -261,7 +260,7 @@ function main ({
         'icon_plus_one',
       ], 0.5);
 
-      const waterdrop = game.addItem('waterdrop', dropData.matrix, dropData.palette);
+      const waterdrop = game.addItem('waterdrop', waterDropModel);
 
       function handleUseVoxel(gameObject: GameObject, x: number, y: number, z: number) {
         const voxelId = game.getVoxel(x, y, z);
@@ -337,46 +336,30 @@ function main ({
         }
       }
 
-      const helper = game.addObject({
-        id: 'helper',
-        matrix: helperModelData.matrix,
-        palette: helperModelData.palette,
-      });
+      const helper = game.addObject('helper', helperModel);
       helper.setPosition(20, 2, 38);
       helper.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       // helper.lookAt(vec3.fromValues(8, 2, 33));
       helper.addSprite(sprite);
       // helper.on('appear', () => console.log('good!'));
 
-      const a = game.addObject({
-        id: 'a',
-        matrix,
-        palette,
-      });
+      const a = game.addObject('a', cubieModel);
       a.setPosition(7, 2, 33);
       a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       a.lookAt(vec3.fromValues(8, 2, 33));
       a.addSprite(sprite);
 
-      const b = game.addObject({
-        id: 'b',
-        matrix,
-        palette,
-      });
+      const b = game.addObject('b', cubieModel);
       b.setPosition(9, 7, 30);
       b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       b.lookAt(vec3.fromValues(10, 7, 30));
 
-      const c = game.addObject({
-        id: 'c',
-        matrix,
-        palette,
-      });
+      const c = game.addObject('c', cubieModel);
       c.setPosition(11, 4, 36);
       c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       c.lookAt(vec3.fromValues(12, 4, 36));
 
-      const player = game.getObject('0');
+      const player = game.addObject('player', cubieModel);
       player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       player.setPosition(35, 2, 61);
       // player.setPosition(0, 4, 0);
