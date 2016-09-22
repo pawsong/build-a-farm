@@ -11,10 +11,11 @@ import ModeFsm, { ModeState } from './ModeFsm';
 
 import {
   Game,
-  GameObject,
   Camera,
   TopDownCamera,
 } from '@buffy/voxel-engine';
+
+import Character from '../Character';
 
 import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
 import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
@@ -32,19 +33,16 @@ const focusedVoxel = vec3.create();
 class FpsMode extends ModeState<void> {
   game: Game;
 
-  helper: GameObject;
-
   camera: FpsCamera;
   ray: any;
   controls: FpsControl;
 
-  constructor(fsm: ModeFsm, game: Game, player: GameObject, helper: GameObject) {
+  constructor(fsm: ModeFsm, game: Game, player: Character) {
     super(fsm);
 
     this.game = game;
 
     const { shell } = game;
-    this.helper = helper;
 
     this.ray = createRay([0, 0, 0], [0, 0, 1]);
     this.camera = new FpsCamera(player);
@@ -170,8 +168,8 @@ class FpsMode extends ModeState<void> {
     this.game.removeListener('use', this.handleUse);
   }
 
-  handleUse = (target: GameObject) => {
-    if (this.helper !== target) {
+  handleUse = (target: Character) => {
+    if (target.scriptable) {
       this.transitionTo(this.fsm.states.transitionMode, {
         target,
         viewMatrix: this.camera.viewMatrix,

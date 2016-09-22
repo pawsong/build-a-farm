@@ -1,4 +1,4 @@
-import { GameObject } from '@buffy/voxel-engine';
+import Character from './Character';
 import MapService from './MapService';
 
 enum HelperBehaviorState {
@@ -8,13 +8,13 @@ enum HelperBehaviorState {
 
 class HelperBehavior {
   mapService: MapService;
-  player: GameObject;
-  helper: GameObject;
+  player: Character;
+  helper: Character;
 
   stareAtPlayer: boolean;
   state: HelperBehaviorState;
 
-  constructor(mapService: MapService, player: GameObject, helper: GameObject) {
+  constructor(mapService: MapService, player: Character, helper: Character) {
     this.mapService = mapService;
     this.player = player;
     this.helper = helper;

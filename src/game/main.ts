@@ -8,6 +8,8 @@ import TransitionMode from './modes/TransitionMode';
 import TopDownMode from './modes/TopDownMode';
 import ToFpsMode from './modes/ToFpsMode';
 
+import Character from './Character';
+
 import MapService from './MapService';
 
 import PF from 'pathfinding';
@@ -336,34 +338,50 @@ function main ({
         }
       }
 
-      const helper = game.addObject('helper', helperModel);
+      const helper = new Character('helper', helperModel, {
+        scriptable: false,
+      });
+
       helper.setPosition(20, 2, 38);
       helper.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       // helper.lookAt(vec3.fromValues(8, 2, 33));
       helper.addSprite(sprite);
       // helper.on('appear', () => console.log('good!'));
+      game.addObject(helper);
 
-      const a = game.addObject('a', cubieModel);
+      const a = new Character('a', cubieModel, {
+        scriptable: true,
+      });
       a.setPosition(7, 2, 33);
       a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       a.lookAt(vec3.fromValues(8, 2, 33));
       a.addSprite(sprite);
+      game.addObject(a);
 
-      const b = game.addObject('b', cubieModel);
+      const b = new Character('b', cubieModel, {
+        scriptable: true,
+      });
       b.setPosition(9, 7, 30);
       b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       b.lookAt(vec3.fromValues(10, 7, 30));
+      game.addObject(b);
 
-      const c = game.addObject('c', cubieModel);
+      const c = new Character('c', cubieModel, {
+        scriptable: true,
+      });
       c.setPosition(11, 4, 36);
       c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       c.lookAt(vec3.fromValues(12, 4, 36));
+      game.addObject(c);
 
-      const player = game.addObject('player', cubieModel);
+      const player = new Character('player', cubieModel, {
+        scriptable: false,
+      });
       player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       player.setPosition(35, 2, 61);
       // player.setPosition(0, 4, 0);
       player.lookAt(vec3.set(v0, 34, 2, 61));
+      game.addObject(player);
 
       const blocks = [
         game.registry.getBlockIndex(1),
@@ -492,7 +510,7 @@ function main ({
       // Rendering
 
       const fsm = new ModeFsm();
-      const fpsMode = new FpsMode(fsm, game, player, helper);
+      const fpsMode = new FpsMode(fsm, game, player);
       fsm.init({
         fpsMode,
         transitionMode: new TransitionMode(fsm, game, codeEditor),
