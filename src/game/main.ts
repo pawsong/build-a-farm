@@ -38,7 +38,9 @@ import {
   searchForNearestVoxel7,
 } from './ndops/searchForNearestVoxel';
 
-const bucketWaterIcon64 = require('./bucket_water.png');
+const bucketWaterIcon64 = require('../icons/bucket_water.png');
+const sproutIcon64 = require('../icons/sprout.png');
+const wheatIcon64 = require('../icons/wheat.png');
 
 import HelperBehavior from './HelperBehavior';
 
@@ -69,8 +71,9 @@ const sprout: string = require('file!./models/sprout.msgpack');
 const resourceUrl = require('file!./textures/GoodMorningCraftv4.95.zip');
 const iconExclamationMarkUrl = require('./textures/icon_exclamation_mark.png');
 const iconQuestionMarkUrl = require('./textures/icon_question_mark.png');
-const iconPlusOneUrl = require('./textures/icon_plus_one.png');
-const itemWheatUrl = require('./textures/item_wheat.png');
+const iconWheatPlusOne1Url = require('./textures/icon_wheat_plus_one_1.png');
+const iconWheatPlusOne2Url = require('./textures/icon_wheat_plus_one_2.png');
+const iconWheatPlusOne3Url = require('./textures/icon_wheat_plus_one_3.png');
 
 import VirtualMachine from '../vm/VirtualMachine';
 
@@ -205,8 +208,9 @@ function main ({
     fetchTexturePack(resourceUrl),
     fetchNonBlockTexture(iconExclamationMarkUrl),
     fetchNonBlockTexture(iconQuestionMarkUrl),
-    fetchNonBlockTexture(iconPlusOneUrl),
-    fetchNonBlockTexture(itemWheatUrl),
+    fetchNonBlockTexture(iconWheatPlusOne1Url),
+    fetchNonBlockTexture(iconWheatPlusOne2Url),
+    fetchNonBlockTexture(iconWheatPlusOne3Url),
   ]).then(result => {
     const [
       shell,
@@ -217,8 +221,9 @@ function main ({
       pack,
       iconExclamationMarkImage,
       iconQuestionMarkImage,
-      iconPlusOneImage,
-      itemWheatImage,
+      iconWheatPlusOne1Image,
+      iconWheatPlusOne2Image,
+      iconWheatPlusOne3Image,
     ] = <any> result;
 
     shell.on('gl-render', () => stats.update());
@@ -258,15 +263,17 @@ function main ({
     game.stitcher.once('addedAll', () => {
       game.stitcher.addNonBlockTexture('icon_exclamation_mark', iconExclamationMarkImage);
       game.stitcher.addNonBlockTexture('icon_question_mark', iconQuestionMarkImage);
-      game.stitcher.addNonBlockTexture('icon_plus_one', iconPlusOneImage);
-      game.stitcher.addNonBlockTexture('item_wheat', itemWheatImage);
+      game.stitcher.addNonBlockTexture('icon_wheat_plus_one_1', iconWheatPlusOne1Image);
+      game.stitcher.addNonBlockTexture('icon_wheat_plus_one_2', iconWheatPlusOne2Image);
+      game.stitcher.addNonBlockTexture('icon_wheat_plus_one_3', iconWheatPlusOne3Image);
 
       game.stitcher.updateTextureSideID();
 
       const sprite = game.sprites.register('icon_exclamation_mark', [1, 1], ['icon_exclamation_mark']);
-      const sprite2 = game.sprites.register('wheat_plus_one', [2, 1], [
-        'item_wheat',
-        'icon_plus_one',
+      const sprite2 = game.sprites.register('wheat_plus_one', [3, 1], [
+        'icon_wheat_plus_one_1',
+        'icon_wheat_plus_one_2',
+        'icon_wheat_plus_one_3',
       ], 0.5);
 
       const waterdrop = game.addItem('waterdrop', waterDropModel);
@@ -286,6 +293,10 @@ function main ({
           }
           case 7: {
             if (gameObject.item === waterdrop) {
+              notification.show({
+                imageUrl: sproutIcon64,
+                message: 'Grow a sprout',
+              });
               mapService.setBlock(x, y + 1, z, 8);
               gameObject.throwItem();
             }
@@ -343,6 +354,11 @@ function main ({
           case 15: {
             mapService.setBlock(x, y, z, 0);
             game.effectManager.add(x + 0.5, y + 0.5 + 0.5, z + 0.5, sprite2);
+
+            notification.show({
+              imageUrl: wheatIcon64,
+              message: 'Harvest wheat',
+            });
 
             cropCount = cropCount + 1;
             statusPanel.setCropCount(cropCount);

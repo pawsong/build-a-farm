@@ -2,7 +2,7 @@ import React from 'react';
 
 const styles = require('./StatusPanel.css');
 
-const itemWheatUrl = require('./crop.png');
+const itemWheatUrl = require('../../icons/wheat.png');
 
 interface StatusPanelState {
   cropCount: number;
