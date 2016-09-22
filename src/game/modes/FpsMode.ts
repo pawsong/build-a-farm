@@ -15,7 +15,9 @@ import {
   TopDownCamera,
 } from '@buffy/voxel-engine';
 
-import Character from '../Character';
+import Character, {
+  fpsControlOptions,
+} from '../Character';
 
 import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
 import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
@@ -89,12 +91,7 @@ class FpsMode extends ModeState<void> {
       })
     })
 
-    this.controls = new FpsControl(buttons, shell, {
-      discreteFire: false,
-      fireRate: 100, // ms between firing
-      jumpTimer: 25,
-      walkMaxSpeed: Number(0.0056) * 2,
-    });
+    this.controls = new FpsControl(buttons, shell, fpsControlOptions);
     this.controls.target(player.physics, player, this.camera.camera);
   }
 
