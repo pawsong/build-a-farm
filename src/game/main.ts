@@ -38,6 +38,8 @@ import {
   searchForNearestVoxel7,
 } from './ndops/searchForNearestVoxel';
 
+const bucketWaterIcon64 = require('./bucket_water.png');
+
 import HelperBehavior from './HelperBehavior';
 
 import BLOCKS from './blocks';
@@ -55,6 +57,7 @@ import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 
 import Overlay from '../components/Overlay';
 import CodeEditor from '../components/CodeEditor';
+import Notification from '../components/Notification';
 import StatusPanel from '../components/StatusPanel';
 
 const map: string = require('file!./models/map.msgpack');
@@ -86,7 +89,9 @@ const CHUNK_ARRAY_SIZE = CHUNK_SHAPE[0] * CHUNK_SHAPE[1] * CHUNK_SHAPE[2];
 // Stats
 const stats = new Stats();
 stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-document.body.appendChild( stats.dom );
+stats.dom.style.top = 'inherit';
+stats.dom.style.bottom = '0';
+document.body.appendChild(stats.dom);
 
 function fetchObjectModel(url) {
   return axios.get(url, { responseType: 'arraybuffer' })
@@ -179,6 +184,7 @@ interface MainOptions {
   overlay: Overlay;
   codeEditor: CodeEditor;
   statusPanel: StatusPanel;
+  notification: Notification;
   vm: VirtualMachine;
 }
 
@@ -187,6 +193,7 @@ function main ({
   overlay,
   codeEditor,
   statusPanel,
+  notification,
   vm,
 }: MainOptions) {
   Promise.all([
@@ -270,6 +277,11 @@ function main ({
         switch(voxelId) {
           case 6: {
             gameObject.holdItem(waterdrop);
+
+            notification.show({
+              imageUrl: bucketWaterIcon64,
+              message: 'Get water',
+            });
             break;
           }
           case 7: {

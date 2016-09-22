@@ -12,3 +12,10 @@ body {
   font-weight: normal;
   font-style: normal;
 }
+
+@font-face {
+  font-family: Minecraftia;
+  src: url(./fonts/Minecraftia.ttf) format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
