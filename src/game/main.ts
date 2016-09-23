@@ -61,6 +61,7 @@ import Overlay from '../components/Overlay';
 import CodeEditor from '../components/CodeEditor';
 import Notification from '../components/Notification';
 import StatusPanel from '../components/StatusPanel';
+import FpsFocus from '../components/FpsFocus';
 
 const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
@@ -188,6 +189,7 @@ interface MainOptions {
   codeEditor: CodeEditor;
   statusPanel: StatusPanel;
   notification: Notification;
+  fpsFocus: FpsFocus;
   vm: VirtualMachine;
 }
 
@@ -197,6 +199,7 @@ function main ({
   codeEditor,
   statusPanel,
   notification,
+  fpsFocus,
   vm,
 }: MainOptions) {
   Promise.all([
@@ -367,6 +370,7 @@ function main ({
       }
 
       const helper = new Character('helper', helperModel, {
+        name: 'Helper',
         scriptable: false,
       });
 
@@ -378,6 +382,7 @@ function main ({
       game.addObject(helper);
 
       const a = new Character('a', cubieModel, {
+        name: 'Cubie A',
         scriptable: true,
       });
       a.setPosition(7, 2, 33);
@@ -387,6 +392,7 @@ function main ({
       game.addObject(a);
 
       const b = new Character('b', cubieModel, {
+        name: 'Cubie B',
         scriptable: true,
       });
       b.setPosition(9, 7, 30);
@@ -395,6 +401,7 @@ function main ({
       game.addObject(b);
 
       const c = new Character('c', cubieModel, {
+        name: 'Cubie C',
         scriptable: true,
       });
       c.setPosition(11, 4, 36);
@@ -403,6 +410,7 @@ function main ({
       game.addObject(c);
 
       const player = new Character('player', cubieModel, {
+        name: 'Player',
         scriptable: false,
       });
       player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
@@ -538,7 +546,7 @@ function main ({
       // Rendering
 
       const fsm = new ModeFsm();
-      const fpsMode = new FpsMode(fsm, game, player);
+      const fpsMode = new FpsMode(fsm, game, player, fpsFocus);
       fsm.init({
         fpsMode,
         transitionMode: new TransitionMode(fsm, game, codeEditor),
@@ -555,7 +563,6 @@ function main ({
         fsm.current.onTick(dt);
       });
       game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position[0], position[1], position[2]));
-      game.on('use', (object: GameObject) => object.emit('used', player));
 
       overlay.hide();
     });

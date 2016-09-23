@@ -5,6 +5,8 @@ import Overlay from '../Overlay';
 import CodeEditor from '../CodeEditor';
 import StatusPanel from '../StatusPanel';
 import Notification from '../Notification';
+import Dialogue from '../Dialogue';
+import FpsFocus from '../FpsFocus';
 
 import main from '../../game/main';
 
@@ -26,6 +28,7 @@ class Root extends React.Component<{}, {}> {
     const codeEditor = this.refs['codeEditor'] as CodeEditor;
     const statusPanel = this.refs['statusPanel'] as StatusPanel;
     const notification = this.refs['notification'] as Notification;
+    const fpsFocus = this.refs['fpsFocus'] as FpsFocus;
 
     main({
       container,
@@ -33,6 +36,7 @@ class Root extends React.Component<{}, {}> {
       codeEditor,
       notification,
       statusPanel,
+      fpsFocus,
       vm: this.vm,
     });
   }
@@ -45,6 +49,8 @@ class Root extends React.Component<{}, {}> {
         <div className={styles.game} ref="game" tabIndex="1"></div>
         <StatusPanel ref="statusPanel" />
         <CodeEditor ref="codeEditor" vm={this.vm} />
+        <Dialogue />
+        <FpsFocus ref="fpsFocus" />
       </div>
     );
   }

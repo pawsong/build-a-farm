@@ -1,0 +1,17 @@
+.root {
+  position: absolute;
+  z-index: 10000;
+  height: 200px;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  padding: 12px;
+  color: #FFFFFF;
+  font-family: Minecraftia;
+  font-size: 28px;
+  font-smooth: never;
+  text-shadow: 1px 1px 4px #000000;
+  -webkit-font-smoothing: none;
+
+  text-align: center;
+}

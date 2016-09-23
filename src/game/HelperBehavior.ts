@@ -28,10 +28,6 @@ class HelperBehavior {
     if (this.state !== HelperBehaviorState.MOVING) this.helper.lookAt(this.player.position);
   }
 
-  onUsed() {
-
-  }
-
   handleUsed = () => {
     if (this.state !== HelperBehaviorState.IDLE) return;
 

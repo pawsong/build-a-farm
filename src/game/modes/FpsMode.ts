@@ -22,6 +22,8 @@ import Character, {
 import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
 import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
 
+import FpsFocus from '../../components/FpsFocus';
+
 import { RAY_MIN_DIST } from '../constants';
 
 const cp = vec3.create();
@@ -32,6 +34,23 @@ const v1 = vec3.create();
 
 const focusedVoxel = vec3.create();
 
+const keybindings = {
+  'W': 'forward',
+  'A': 'left',
+  'S': 'backward',
+  'D': 'right',
+  '<up>': 'forward',
+  '<left>': 'left',
+  '<down>': 'backward',
+  '<right>': 'right',
+  '<mouse 1>': 'fire',
+  '<mouse 3>': 'firealt',
+  '<space>': 'jump',
+  '<shift>': 'crouch',
+  '<control>': 'alt',
+  '<tab>': 'sprint',
+};
+
 class FpsMode extends ModeState<void> {
   game: Game;
 
@@ -39,32 +58,24 @@ class FpsMode extends ModeState<void> {
   ray: any;
   controls: FpsControl;
 
-  constructor(fsm: ModeFsm, game: Game, player: Character) {
+  fpsFocus: FpsFocus;
+  focusedObject: Character;
+
+  player: Character;
+
+  constructor(fsm: ModeFsm, game: Game, player: Character, fpsFocus: FpsFocus) {
     super(fsm);
 
     this.game = game;
+    this.player = player;
 
     const { shell } = game;
 
     this.ray = createRay([0, 0, 0], [0, 0, 1]);
     this.camera = new FpsCamera(player);
 
-    const keybindings = {
-      'W': 'forward',
-      'A': 'left',
-      'S': 'backward',
-      'D': 'right',
-      '<up>': 'forward',
-      '<left>': 'left',
-      '<down>': 'backward',
-      '<right>': 'right',
-      '<mouse 1>': 'fire',
-      '<mouse 3>': 'firealt',
-      '<space>': 'jump',
-      '<shift>': 'crouch',
-      '<control>': 'alt',
-      '<tab>': 'sprint',
-    };
+    this.fpsFocus = fpsFocus;
+    this.focusedObject = null;
 
     // cleanup key name - based on https://github.com/mikolalysenko/game-shell/blob/master/shell.js
     const filtered_vkey = function(k) {
@@ -102,8 +113,29 @@ class FpsMode extends ModeState<void> {
 
     this.onResize();
 
-    this.game.on('use', this.handleUse);
+    this.focusedObject = null;
+    this.fpsFocus.setVisible(false);
+
+    window.addEventListener('mousedown', this.handleMouseDown);
   }
+
+  handleMouseDown = (e: MouseEvent) => {
+    if (e.button === 2) {
+      if (this.focusedObject) {
+        this.handleUse(this.focusedObject);
+        this.focusedObject.emit('used', this.player);
+      }
+    }
+  }
+
+  handleUse(target: Character) {
+    if (target.scriptable) {
+      this.transitionTo(this.fsm.states.transitionMode, {
+        target,
+        viewMatrix: this.camera.viewMatrix,
+      });
+    }
+  };
 
   onResize() {
     const { shell } = this.game;
@@ -119,10 +151,10 @@ class FpsMode extends ModeState<void> {
     this.ray.update(cp, cv);
 
     let minDist = RAY_MIN_DIST * RAY_MIN_DIST;
-    let focusedObject = null;
+    let focusedObject: Character = null;
 
     for (const object of this.game.objects) {
-      if (object === this.camera.camera.parent) continue;
+      if (object === this.player) continue;
 
       const distance = vec3.squaredDistance(object.position, cp);
       if (distance > minDist) continue;
@@ -134,13 +166,21 @@ class FpsMode extends ModeState<void> {
 
       if (result) {
         minDist = distance;
-        focusedObject = object;
+        focusedObject = <Character> object;
       }
     }
 
-    this.game.focusedObject = focusedObject;
+    if (this.focusedObject !== focusedObject) {
+      this.focusedObject = focusedObject;
+      if (this.focusedObject) {
+        this.fpsFocus.setVisible(true);
+        this.fpsFocus.setName(this.focusedObject.name);
+      } else {
+        this.fpsFocus.setVisible(false);
+      }
+    }
 
-    if (focusedObject) {
+    if (this.focusedObject) {
       this.game.focusedVoxel = null;
     } else {
       const result = this.game.raycastVoxels(cp, cv, RAY_MIN_DIST, v0, v1);
@@ -162,17 +202,9 @@ class FpsMode extends ModeState<void> {
   }
 
   onLeave() {
-    this.game.removeListener('use', this.handleUse);
+    this.fpsFocus.setVisible(false);
+    window.removeEventListener('mousedown', this.handleMouseDown);
   }
-
-  handleUse = (target: Character) => {
-    if (target.scriptable) {
-      this.transitionTo(this.fsm.states.transitionMode, {
-        target,
-        viewMatrix: this.camera.viewMatrix,
-      });
-    }
-  };
 }
 
 export default FpsMode;

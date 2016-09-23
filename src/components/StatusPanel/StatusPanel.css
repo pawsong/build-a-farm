@@ -4,8 +4,10 @@
   z-index: 1000;
   display: flex;
   align-items: center;
+  color: #FFFFFF;
   font-size: 48px;
   font-family: Minecraftia;
+  text-shadow: 1px 1px 4px #000000;
 
   font-smooth: never;
   -webkit-font-smoothing: none;

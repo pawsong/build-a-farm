@@ -2,18 +2,16 @@
   position: absolute;
   z-index: 1001;
   font-family: Minecraftia;
+  font-size: 24px;
   font-smooth: never;
   -webkit-font-smoothing: none;
 
   display: flex;
   align-items: center;
-  font-size: 24px;
-  background-color: #90A4AE;
   padding: 12px;
-  border-color: black;
-  border-radius: 0px;
-  border-width: 10px;
-  border: 8px solid #546E7A;
+
+  background-color: #607D8B;
+  border: 8px solid #37474F;
 
   animation-duration: 0.5s;
   animation-fill-mode: both;

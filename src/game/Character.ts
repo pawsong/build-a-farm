@@ -5,6 +5,7 @@ import {
 } from '@buffy/voxel-engine';
 
 interface CharacterOptions {
+  name: string;
   scriptable: boolean;
 }
 
@@ -17,9 +18,11 @@ export const fpsControlOptions: FpsControlOptions = {
 
 class Character extends GameObject {
   scriptable: boolean;
+  name: string;
 
   constructor(id: string, model: Model, options: CharacterOptions) {
     super(id, model, fpsControlOptions);
+    this.name = options.name;
     this.scriptable = options.scriptable;
   }
 }
