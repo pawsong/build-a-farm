@@ -29,6 +29,7 @@ class Root extends React.Component<{}, {}> {
     const statusPanel = this.refs['statusPanel'] as StatusPanel;
     const notification = this.refs['notification'] as Notification;
     const fpsFocus = this.refs['fpsFocus'] as FpsFocus;
+    const dialogue = this.refs['dialogue'] as Dialogue;
 
     main({
       container,
@@ -37,6 +38,7 @@ class Root extends React.Component<{}, {}> {
       notification,
       statusPanel,
       fpsFocus,
+      dialogue,
       vm: this.vm,
     });
   }
@@ -46,10 +48,10 @@ class Root extends React.Component<{}, {}> {
       <div>
         <Overlay ref="overlay" />
         <Notification ref="notification" />
-        <div className={styles.game} ref="game" tabIndex="1"></div>
+        <div className={styles.game} ref="game" tabIndex={1}></div>
         <StatusPanel ref="statusPanel" />
         <CodeEditor ref="codeEditor" vm={this.vm} />
-        <Dialogue />
+        <Dialogue ref="dialogue" />
         <FpsFocus ref="fpsFocus" />
       </div>
     );

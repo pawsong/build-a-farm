@@ -14,4 +14,13 @@
   -webkit-font-smoothing: none;
 
   text-align: center;
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+}
+
+.sender {
+  color: #90A4AE;
+  margin-right: 12px;
 }

@@ -22,33 +22,102 @@ class HelperBehavior {
     this.helper.on('used', this.handleUsed);
 
     this.state = HelperBehaviorState.IDLE;
+    this.step = 0;
   }
 
   onTick(dt: number) {
     if (this.state !== HelperBehaviorState.MOVING) this.helper.lookAt(this.player.position);
   }
 
+  sendMessageToPlayer(message: string) {
+    return new Promise(resolve => this.player.emit('message', this.helper, message, resolve));
+  }
+
+  step: number;
+
   handleUsed = () => {
     if (this.state !== HelperBehaviorState.IDLE) return;
 
-    const { position } = this.helper;
+    switch(this.step) {
+      case 0: {
+        this.goWater().then(() => this.step++);
+        break;
+      }
+      case 1: {
+        this.goSprout().then(() => this.step++);
+        break;
+      }
+      case 2: {
+        this.orderWheat().then(() => this.step++);
+        break;
+      }
+      case 3: {
+        this.goCubie().then(() => this.step++);
+        break;
+      }
+    }
+  }
 
-    const result = this.mapService.searchForNearestVoxel(position, [6]);
-    const [voxelId, p0, p1] = result;
+  showClickWaterBlockDirection() {
+    return this.helper.jump()
+      .then(() => this.sendMessageToPlayer('Click water block.'));
+  }
 
-    const path = this.mapService.findPath(position, [p0, position[1], p1]);
+  goWater() {
+    return Promise.resolve()
+      .then(() => this.sendMessageToPlayer('This place is so nice!'))
+      .then(() => this.sendMessageToPlayer('Follow me. You can get water here.'))
+      .then(() => {
+        const { position } = this.helper;
 
-    this.state = HelperBehaviorState.MOVING;
-    this.helper.move(path)
+        const result = this.mapService.searchForNearestVoxel(position, [6]);
+        const [voxelId, p0, p1] = result;
+
+        const path = this.mapService.findPath(position, [p0, position[1], p1]);
+
+        this.state = HelperBehaviorState.MOVING;
+        return this.helper.move(path);
+      })
       .then(() => {
         this.state = HelperBehaviorState.IDLE;
         return this.helper.stop();
       })
-      .then(() => this.helper.jump());
-      // .then(() => {
-      //   game.on('tick', dt => helper.lookAt(player.position));
-      //   return helper.jump();
-      // });
+      .then(() => this.showClickWaterBlockDirection());
+  }
+
+  goSprout() {
+    return Promise.resolve()
+      .then(() => this.sendMessageToPlayer('Now you can grow a sprout'))
+      .then(() => {
+        const { position } = this.helper;
+
+        const result = this.mapService.searchForNearestVoxel(position, [7]);
+        const [voxelId, p0, p1] = result;
+
+        const path = this.mapService.findPath(position, [p0, position[1], p1]);
+
+        this.state = HelperBehaviorState.MOVING;
+        return this.helper.move(path);
+      })
+      .then(() => {
+        this.state = HelperBehaviorState.IDLE;
+        return this.helper.stop();
+      })
+      .then(() => this.helper.jump())
+      .then(() => this.sendMessageToPlayer('Click dirt block'))
+  }
+
+  orderWheat() {
+    return Promise.resolve()
+      .then(() => this.sendMessageToPlayer(`You can grow the sprout you've just planted by watering`))
+      .then(() => this.sendMessageToPlayer(`When all grown up, you can harvest wheat`));
+  }
+
+  goCubie() {
+    return Promise.resolve()
+      .then(() => this.sendMessageToPlayer(`Let's go cubies`))
+      .then(() => this.helper.jump())
+      .then(() => this.sendMessageToPlayer('Click cubie'));
   }
 }
 

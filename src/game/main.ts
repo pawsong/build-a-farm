@@ -62,6 +62,7 @@ import CodeEditor from '../components/CodeEditor';
 import Notification from '../components/Notification';
 import StatusPanel from '../components/StatusPanel';
 import FpsFocus from '../components/FpsFocus';
+import Dialogue from '../components/Dialogue';
 
 const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
@@ -190,6 +191,7 @@ interface MainOptions {
   statusPanel: StatusPanel;
   notification: Notification;
   fpsFocus: FpsFocus;
+  dialogue: Dialogue;
   vm: VirtualMachine;
 }
 
@@ -200,6 +202,7 @@ function main ({
   statusPanel,
   notification,
   fpsFocus,
+  dialogue,
   vm,
 }: MainOptions) {
   Promise.all([
@@ -418,6 +421,10 @@ function main ({
       // player.setPosition(0, 4, 0);
       player.lookAt(vec3.set(v0, 34, 2, 61));
       game.addObject(player);
+
+      player.on('message', (speaker, message, callback) => {
+        dialogue.showMessage(speaker.name, message).then(() => callback());
+      });
 
       const blocks = [
         game.registry.getBlockIndex(1),
