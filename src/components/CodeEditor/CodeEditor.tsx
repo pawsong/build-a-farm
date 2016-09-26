@@ -3,7 +3,12 @@ import { findDOMNode } from 'react-dom';
 import FloatingActionButton from 'material-ui/FloatingActionButton';
 import PlayArrow from 'material-ui/svg-icons/av/play-arrow';
 import Stop from 'material-ui/svg-icons/av/stop';
-import { Blockly, toolbox } from '../../blockly';
+import {
+  Blockly,
+  toolbox,
+  initblocks,
+  media,
+} from '../../blockly';
 
 const styles = require('./CodeEditor.css');
 
@@ -58,8 +63,14 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
     this.root.style.display = 'block';
 
     if (!this.workspace) {
-      this.workspace = Blockly.inject(this.root, { toolbox });
+      this.workspace = Blockly.inject(this.root, {
+        toolbox,
+        media,
+      });
       Blockly.JavaScript.init(this.workspace);
+
+      const dom = Blockly.Xml.textToDom(initblocks);
+      Blockly.Xml.domToWorkspace(dom, this.workspace);
     }
   }
 
