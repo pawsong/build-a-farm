@@ -1,3 +1,5 @@
+import React from 'react';
+
 import {
   GameObject,
   Model,
@@ -28,9 +30,9 @@ class Character extends GameObject {
 }
 
 interface Character {
-  emit(event: 'message', sender: Character, message: string, callback: Function): boolean;
+  emit(event: 'message', sender: Character, message: React.ReactNode, callback: Function): boolean;
   emit(event: string, ...args: any[]): boolean;
-  on(event: 'message', listener: (sender: Character, message: string, callback: Function) => any): this;
+  on(event: 'message', listener: (sender: Character, message: React.ReactNode, callback: Function) => any): this;
   on(event: string, listener: Function): this;
 }
 

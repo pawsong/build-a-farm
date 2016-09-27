@@ -9,7 +9,7 @@ function waitFor(ms: number) {
 
 interface DialogueState {
   sender: string;
-  message: string;
+  message: React.ReactNode;
 }
 
 class Dialogue extends React.Component<{}, DialogueState> {
@@ -20,7 +20,7 @@ class Dialogue extends React.Component<{}, DialogueState> {
     super(props);
     this.state = {
       sender: '',
-      message: ''
+      message: '',
     };
     this.pending = Promise.resolve();
   }
@@ -29,7 +29,7 @@ class Dialogue extends React.Component<{}, DialogueState> {
     this.root = findDOMNode<HTMLElement>(this.refs['root']);
   }
 
-  showMessage(sender: string, message: string) {
+  showMessage(sender: string, message: React.ReactNode) {
     return this.pending = this.pending.then(() => {
       this.setState({ sender, message });
       return waitFor(2500);

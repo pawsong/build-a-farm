@@ -61,6 +61,7 @@ import Notification from '../components/Notification';
 import StatusPanel from '../components/StatusPanel';
 import FpsFocus from '../components/FpsFocus';
 import Dialogue from '../components/Dialogue';
+import TipBalloon from '../TipBalloon';
 
 const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
@@ -88,6 +89,24 @@ const CHUNK_SHAPE = [
   CHUNK_SIZE + CHUNK_PAD,
 ];
 const CHUNK_ARRAY_SIZE = CHUNK_SHAPE[0] * CHUNK_SHAPE[1] * CHUNK_SHAPE[2];
+
+const MARGIN = 20;
+
+function getPoint0(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+  return {
+    x: rect.left,
+    y: rect.top,
+  };
+}
+
+function getPoint1(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+  return {
+    x: rect.right,
+    y: rect.bottom,
+  };
+}
 
 // Stats
 const stats = new Stats();
@@ -190,6 +209,7 @@ interface MainOptions {
   notification: Notification;
   fpsFocus: FpsFocus;
   dialogue: Dialogue;
+  tipBalloon: TipBalloon;
   vm: VirtualMachine;
 }
 
@@ -201,6 +221,7 @@ function main ({
   notification,
   fpsFocus,
   dialogue,
+  tipBalloon,
   vm,
 }: MainOptions) {
   Promise.all([
@@ -216,6 +237,17 @@ function main ({
     fetchNonBlockTexture(iconWheatPlusOne2Url),
     fetchNonBlockTexture(iconWheatPlusOne3Url),
   ]).then(result => {
+    const o = document.createElement('div');
+    document.body.appendChild(o);
+    o.style.display = 'none';
+    o.style.position = 'absolute';
+    o.style.top = '0';
+    o.style.bottom = '0';
+    o.style.left = '0';
+    o.style.right = '0';
+    o.style.background = 'rgba(0, 0, 0, 0.5)';
+    o.style.zIndex = '2000';
+
     const [
       shell,
       chunks,
@@ -552,15 +584,50 @@ function main ({
       // Rendering
 
       const fsm = new ModeFsm();
-      const fpsMode = new FpsMode(fsm, game, player, fpsFocus);
+      const fpsMode = new FpsMode(fsm, game, player, fpsFocus, statusPanel);
+      const topDownMode = new TopDownMode(fsm, game, codeEditor);
+
       fsm.init({
         fpsMode,
-        transitionMode: new TransitionMode(fsm, game, codeEditor, dialogue),
-        topDownMode: new TopDownMode(fsm, game),
-        toFpsMode: new ToFpsMode(fsm, game, codeEditor, dialogue),
+        transitionMode: new TransitionMode(fsm, game, codeEditor),
+        topDownMode,
+        toFpsMode: new ToFpsMode(fsm, game, codeEditor),
       }, fpsMode);
 
       const helperBehavior = new HelperBehavior(mapService, player, helper);
+
+      let topDownEntered = false;
+
+      topDownMode.on('enter', () => {
+        if (topDownEntered) return;
+        topDownEntered = true;
+
+        o.style.display = 'block';
+        player.emit('message', helper, `Let's start to teach Cubie how to work!`, () => {
+          o.style.display = 'none';
+
+          const actionButton = codeEditor.actionButton; // getActionButton();
+
+          tipBalloon.show();
+          tipBalloon.attach(actionButton);
+
+          const p0 = getPoint0(tipBalloon.balloon);
+          const p1 = getPoint1(actionButton);
+
+          tipBalloon.makeHole(p0.x - MARGIN, p0.y - MARGIN, p1.x + MARGIN, p1.y + MARGIN);
+
+          codeEditor.once('play', () => {
+            tipBalloon.hide();
+
+            player.emit('message', helper, `Good job!`, () => {
+            });
+          });
+        });
+      });
+
+      topDownMode.on('leave', () => {
+        console.log('leave!');
+      });
 
       shell.on('gl-resize', () => fsm.current.onResize());
       shell.on('gl-render', () => fsm.current.onRender());

@@ -23,6 +23,7 @@ import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
 import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
 
 import FpsFocus from '../../components/FpsFocus';
+import StatusPanel from '../../components/StatusPanel';
 
 import { RAY_MIN_DIST } from '../constants';
 
@@ -59,11 +60,12 @@ class FpsMode extends ModeState<void> {
   controls: FpsControl;
 
   fpsFocus: FpsFocus;
+  statusPanel: StatusPanel;
   focusedObject: Character;
 
   player: Character;
 
-  constructor(fsm: ModeFsm, game: Game, player: Character, fpsFocus: FpsFocus) {
+  constructor(fsm: ModeFsm, game: Game, player: Character, fpsFocus: FpsFocus, statusPanel: StatusPanel) {
     super(fsm);
 
     this.game = game;
@@ -75,6 +77,7 @@ class FpsMode extends ModeState<void> {
     this.camera = new FpsCamera(player);
 
     this.fpsFocus = fpsFocus;
+    this.statusPanel = statusPanel;
     this.focusedObject = null;
 
     // cleanup key name - based on https://github.com/mikolalysenko/game-shell/blob/master/shell.js
@@ -115,6 +118,7 @@ class FpsMode extends ModeState<void> {
 
     this.focusedObject = null;
     this.fpsFocus.setVisible(false);
+    this.statusPanel.show();
 
     window.addEventListener('mousedown', this.handleMouseDown);
   }
@@ -203,6 +207,7 @@ class FpsMode extends ModeState<void> {
 
   onLeave() {
     this.fpsFocus.setVisible(false);
+    this.statusPanel.hide();
     window.removeEventListener('mousedown', this.handleMouseDown);
   }
 }

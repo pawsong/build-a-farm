@@ -1,5 +1,8 @@
+import React from 'react';
 import Character from './Character';
 import MapService from './MapService';
+
+import when_run from '../components/blocks/when_run';
 
 enum HelperBehaviorState {
   IDLE,
@@ -29,7 +32,7 @@ class HelperBehavior {
     if (this.state !== HelperBehaviorState.MOVING) this.helper.lookAt(this.player.position);
   }
 
-  sendMessageToPlayer(message: string) {
+  sendMessageToPlayer(message: React.ReactNode) {
     return new Promise(resolve => this.player.emit('message', this.helper, message, resolve));
   }
 
@@ -65,6 +68,7 @@ class HelperBehavior {
 
   goWater() {
     return Promise.resolve()
+      // .then(() => this.sendMessageToPlayer(<span>Drag {when_run} block.</span>))
       .then(() => this.sendMessageToPlayer('This place is so nice!'))
       .then(() => this.sendMessageToPlayer('Follow me. You can get water here.'))
       .then(() => {

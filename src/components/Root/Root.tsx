@@ -14,6 +14,8 @@ import VirtualMachine from '../../vm/VirtualMachine';
 
 const styles = require('./Root.css');
 
+import TipBalloon from '../../TipBalloon';
+
 class Root extends React.Component<{}, {}> {
   vm: VirtualMachine;
 
@@ -31,6 +33,8 @@ class Root extends React.Component<{}, {}> {
     const fpsFocus = this.refs['fpsFocus'] as FpsFocus;
     const dialogue = this.refs['dialogue'] as Dialogue;
 
+    const tipBalloon = new TipBalloon();
+
     main({
       container,
       overlay,
@@ -39,6 +43,7 @@ class Root extends React.Component<{}, {}> {
       statusPanel,
       fpsFocus,
       dialogue,
+      tipBalloon,
       vm: this.vm,
     });
   }

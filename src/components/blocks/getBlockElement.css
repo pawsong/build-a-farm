@@ -1,0 +1,11 @@
+.container {
+  display: inline-block;
+}
+
+.container :global(.blocklySvg) {
+  background: none;
+}
+
+.container :global(.blocklyMainBackground) {
+  stroke: none;
+}

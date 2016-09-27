@@ -1,0 +1,42 @@
+.overlay {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 3000;
+}
+
+.highlightZone {
+
+}
+
+.balloon {
+  max-width: 400px;
+  z-index: 3001;
+  padding: 20px;
+  background: #FFFFFF;
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
+
+  color: #212121;
+  font-family: Minecraftia;
+  font-size: 20px;
+  font-smooth: never;
+  -webkit-font-smoothing: none;
+}
+
+.balloon:before {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-width: 16px;
+  border-style: solid;
+  pointer-events: none;
+
+  left: 100%;
+  top: 50%;
+  margin-top: -16px;
+  border-left-color: #fff;
+
+  margin-top: 6px;
+}

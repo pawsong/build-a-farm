@@ -9,7 +9,8 @@ import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 import ModeFsm, { ModeState } from './ModeFsm';
 
 import CodeEditor from '../../components/CodeEditor';
-import Dialogue from '../../components/Dialogue';
+
+import Character from '../../game/Character';
 
 const v = vec3.create();
 const offset = vec3.fromValues(7, 10, 7);
@@ -18,7 +19,7 @@ const up = vec3.fromValues(0, 1, 0);
 const toMatrix = mat4.create();
 
 interface Params {
-  target: GameObject;
+  target: Character;
   viewMatrix: mat4;
 }
 
@@ -28,24 +29,22 @@ class TransitionMode extends ModeState<Params> {
   game: Game;
   accum: number;
   codeEditor: CodeEditor;
-  dialogue: Dialogue;
   camera: TransitionCamera;
-  target: GameObject;
+  target: Character;
   fromMatrix: mat4;
 
-  constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor, dialogue: Dialogue) {
+  constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor) {
     super(fsm);
 
     this.game = game;
 
     this.accum = 0;
     this.codeEditor = codeEditor;
-    this.dialogue = dialogue;
     this.camera = new TransitionCamera();
     this.fromMatrix = mat4.create();
   }
 
-  onEnter({ target, viewMatrix }) {
+  onEnter({ target, viewMatrix }: Params) {
     const { shell } = this.game;
     shell.pointerLock = false;
     shell.stickyPointerLock = false;
@@ -54,7 +53,7 @@ class TransitionMode extends ModeState<Params> {
     mat4.copy(this.fromMatrix, viewMatrix);
 
     this.codeEditor.setOpacity(0);
-    this.codeEditor.open(this.target.id);
+    this.codeEditor.open(this.target);
 
     this.accum = 0;
     this.onResize();
@@ -68,7 +67,6 @@ class TransitionMode extends ModeState<Params> {
   onRender() {
     const progress = this.accum / DURATION;
     this.codeEditor.setOpacity(progress);
-    this.dialogue.setWidth(100 - progress * 50);
 
     vec3.add(v, this.target.position, offset);
     mat4.fromTranslation(toMatrix, v);
@@ -91,7 +89,6 @@ class TransitionMode extends ModeState<Params> {
 
   onLeave() {
     this.codeEditor.setOpacity(1);
-    this.dialogue.setWidth(50);
   }
 }
 

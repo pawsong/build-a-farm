@@ -18,8 +18,9 @@
   font-family: Minecraftia;
   font-size: 28px;
   font-smooth: never;
-  text-shadow: 1px 1px 4px #000000;
   -webkit-font-smoothing: none;
+
+  text-shadow: 1px 1px 4px #000000;
 
   text-align: center;
   display: flex;

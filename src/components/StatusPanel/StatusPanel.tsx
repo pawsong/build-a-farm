@@ -5,13 +5,15 @@ const styles = require('./StatusPanel.css');
 const itemWheatUrl = require('../../icons/wheat.png');
 
 interface StatusPanelState {
-  cropCount: number;
+  open?: boolean;
+  cropCount?: number;
 }
 
 class StatusPanel extends React.Component<{}, StatusPanelState> {
   constructor(props) {
     super(props);
     this.state = {
+      open: false,
       cropCount: 0,
     };
   }
@@ -20,7 +22,17 @@ class StatusPanel extends React.Component<{}, StatusPanelState> {
     this.setState({ cropCount });
   }
 
+  show() {
+    this.setState({ open: true });
+  }
+
+  hide() {
+    this.setState({ open: false });
+  }
+
   render() {
+    if (!this.state.open) return null;
+
     return (
       <div className={styles.root}>
         <img src={itemWheatUrl} />

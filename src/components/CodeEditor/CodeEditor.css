@@ -1,16 +1,54 @@
+:root {
+  --menu-height: 50px;
+  --editor-margin: 10px;
+}
+
 .root {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  bottom: 10px;
+  top: 0;
+  right: 0;
+  bottom: 0;
   left: 50%;
   z-index: 1001;
-  display: none;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--menu-height);
+
+  color: #FFFFFF;
+  font-size: 20px;
+  font-family: Minecraftia;
+  text-shadow: 1px 1px 4px #000000;
+
+  font-smooth: never;
+  -webkit-font-smoothing: none;
+
+  margin: 0 20px;
+}
+
+.close {
+  font-family: Minecraftia;
+  font-size: 32px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.editor {
+  position: absolute;
+  top: var(--menu-height);
+  left: var(--editor-margin);
+  right: var(--editor-margin);
+  bottom: var(--editor-margin);
 }
 
 .actionButton {
   position: absolute;
   z-index: 1;
-  right: 20px;
-  bottom: 20px;
+  right: 30px;
+  bottom: 30px;
 }

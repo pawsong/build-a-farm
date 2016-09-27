@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events';
+
 import {
   Game,
   GameObject,
@@ -6,6 +8,9 @@ import {
 } from '@buffy/voxel-engine';
 
 import ModeFsm, { ModeState } from './ModeFsm';
+import CodeEditor from '../../components/CodeEditor';
+
+const styles = require('./TopDownMode.css');
 
 interface Params {
   target: GameObject;
@@ -14,18 +19,34 @@ interface Params {
 class TopDownMode extends ModeState<Params> {
   game: Game;
   camera: TopDownCamera;
+  emitter: EventEmitter;
+  codeEditor: CodeEditor;
 
-  constructor(fsm: ModeFsm, game: Game) {
+  constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor) {
     super(fsm);
     this.game = game;
     this.camera = new TopDownCamera(1 / 4);
+    this.emitter = new EventEmitter();
+    this.codeEditor = codeEditor;
+  }
+
+  tryLeave = () => {
+    this.transitionTo(this.fsm.states.toFpsMode, {
+      viewMatrix: this.camera.viewMatrix,
+    });
+  }
+
+  on(event: string, handler: Function) {
+    this.emitter.on(event, handler);
+    return this;
   }
 
   onEnter({ target }) {
     this.camera.changeTarget(target);
     this.onResize();
+    this.emitter.emit('enter');
 
-    document.addEventListener('keydown', this.handleKeydown, false);
+    this.codeEditor.once('close', this.tryLeave);
   }
 
   onResize() {
@@ -43,15 +64,7 @@ class TopDownMode extends ModeState<Params> {
   }
 
   onLeave() {
-    document.removeEventListener('keydown', this.handleKeydown, false);
-  }
-
-  handleKeydown = (e: KeyboardEvent) => {
-    if (e.keyCode !== 27 /* ESC */) return;
-
-    this.transitionTo(this.fsm.states.toFpsMode, {
-      viewMatrix: this.camera.viewMatrix,
-    });
+    this.codeEditor.removeListener('close', this.tryLeave);
   }
 }
 

@@ -10,7 +10,6 @@ import ModeFsm, { ModeState } from './ModeFsm';
 import FpsMode from './FpsMode';
 
 import CodeEditor from '../../components/CodeEditor';
-import Dialogue from '../../components/Dialogue';
 
 const v = vec3.create();
 const offset = vec3.fromValues(7, 10, 7);
@@ -32,16 +31,14 @@ class TransitionMode extends ModeState<Params> {
   game: Game;
   accum: number;
   codeEditor: CodeEditor;
-  dialogue: Dialogue;
   camera: TransitionCamera;
   fromMatrix: mat4;
 
-  constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor, dialogue: Dialogue) {
+  constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor) {
     super(fsm);
 
     this.game = game;
     this.codeEditor = codeEditor;
-    this.dialogue = dialogue;
 
     this.accum = 0;
     this.camera = new TransitionCamera();
@@ -63,7 +60,6 @@ class TransitionMode extends ModeState<Params> {
   onRender() {
     const progress = this.accum / DURATION;
     this.codeEditor.setOpacity(1 - progress);
-    this.dialogue.setWidth(50 + progress * 50);
 
     const { fpsMode } = this.fsm.states;
 
@@ -81,7 +77,6 @@ class TransitionMode extends ModeState<Params> {
   }
 
   onLeave() {
-    this.dialogue.setWidth(100);
     this.codeEditor.close();
   }
 }
