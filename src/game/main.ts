@@ -391,7 +391,6 @@ function main ({
       a.setPosition(7, 2, 33);
       a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       a.lookAt(vec3.fromValues(8, 2, 33));
-      a.addSprite(sprite);
       game.addObject(a);
 
       const b = new Character('b', cubieModel, {
@@ -556,9 +555,9 @@ function main ({
       const fpsMode = new FpsMode(fsm, game, player, fpsFocus);
       fsm.init({
         fpsMode,
-        transitionMode: new TransitionMode(fsm, game, codeEditor),
+        transitionMode: new TransitionMode(fsm, game, codeEditor, dialogue),
         topDownMode: new TopDownMode(fsm, game),
-        toFpsMode: new ToFpsMode(fsm, game, codeEditor),
+        toFpsMode: new ToFpsMode(fsm, game, codeEditor, dialogue),
       }, fpsMode);
 
       const helperBehavior = new HelperBehavior(mapService, player, helper);

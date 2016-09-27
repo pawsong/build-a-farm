@@ -1,12 +1,20 @@
 .root {
+  pointer-events: none;
+
   position: absolute;
   z-index: 10000;
   height: 200px;
+  width: 100%;
+  bottom: 0;
+}
+
+.inner {
   bottom: 20px;
   left: 20px;
   right: 20px;
   padding: 12px;
   color: #FFFFFF;
+
   font-family: Minecraftia;
   font-size: 28px;
   font-smooth: never;

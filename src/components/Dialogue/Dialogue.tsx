@@ -1,4 +1,5 @@
 import React from 'react';
+import { findDOMNode } from 'react-dom';
 
 const styles = require('./Dialogue.css');
 
@@ -13,6 +14,7 @@ interface DialogueState {
 
 class Dialogue extends React.Component<{}, DialogueState> {
   private pending: Promise<void>;
+  root: HTMLElement;
 
   constructor(props) {
     super(props);
@@ -21,6 +23,10 @@ class Dialogue extends React.Component<{}, DialogueState> {
       message: ''
     };
     this.pending = Promise.resolve();
+  }
+
+  componentDidMount() {
+    this.root = findDOMNode<HTMLElement>(this.refs['root']);
   }
 
   showMessage(sender: string, message: string) {
@@ -32,11 +38,23 @@ class Dialogue extends React.Component<{}, DialogueState> {
     });
   }
 
+  setWidth(percent: number) {
+    this.root.style.width = `${percent}%`;
+  }
+
   render() {
+    return (
+      <div className={styles.root} ref="root">
+        {this.renderBody()}
+      </div>
+    );
+  }
+
+  renderBody() {
     if (!this.state.message) return null;
 
     return (
-      <div className={styles.root}>
+      <div className={styles.inner}>
         <div className={styles.sender}>{this.state.sender}:</div>
         <div className={styles.message}>{this.state.message}</div>
       </div>
