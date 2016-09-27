@@ -38,9 +38,7 @@ import {
   searchForNearestVoxel7,
 } from './ndops/searchForNearestVoxel';
 
-const bucketWaterIcon64 = require('../icons/bucket_water.png');
-const sproutIcon64 = require('../icons/sprout.png');
-const wheatIcon64 = require('../icons/wheat.png');
+import achievements from './achievements';
 
 import HelperBehavior from './HelperBehavior';
 
@@ -284,6 +282,17 @@ function main ({
 
       const waterdrop = game.addItem('waterdrop', waterDropModel);
 
+      const myAchievements = new Set<string>();
+      function giveAchievement(id: string) {
+        if (myAchievements.has(id)) return;
+
+        const achievment = achievements[id];
+        if (!achievment) return;
+
+        myAchievements.add(id);
+        notification.show(achievment);
+      }
+
       function handleUseVoxel(gameObject: GameObject, x: number, y: number, z: number) {
         const voxelId = game.getVoxel(x, y, z);
 
@@ -291,18 +300,12 @@ function main ({
           case 6: {
             gameObject.holdItem(waterdrop);
 
-            notification.show({
-              imageUrl: bucketWaterIcon64,
-              message: 'Get water',
-            });
+            giveAchievement('GET_WATER');
             break;
           }
           case 7: {
             if (gameObject.item === waterdrop) {
-              notification.show({
-                imageUrl: sproutIcon64,
-                message: 'Grow a sprout',
-              });
+              giveAchievement('GROW_A_SPROUT');
               mapService.setBlock(x, y + 1, z, 8);
               gameObject.throwItem();
             }
@@ -361,10 +364,7 @@ function main ({
             mapService.setBlock(x, y, z, 0);
             game.effectManager.add(x + 0.5, y + 0.5 + 0.5, z + 0.5, sprite2);
 
-            notification.show({
-              imageUrl: wheatIcon64,
-              message: 'Harvest wheat',
-            });
+            giveAchievement('HARVEST_WHEAT');
 
             cropCount = cropCount + 1;
             statusPanel.setCropCount(cropCount);
