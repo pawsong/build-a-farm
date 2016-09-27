@@ -195,3 +195,28 @@ Blockly.Blocks['jump'] = {
 Blockly.JavaScript['jump'] = block => {
   return `await jump();\n`;
 };
+
+Blockly.Blocks['controls_forever'] = {
+  /**
+   * Block for repeat forever.
+   * @this Blockly.Block
+   */
+  init: function() {
+    this.appendDummyInput()
+        .appendField('forever');
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setColour(Blockly.Blocks.loops.HUE);
+    this.setTooltip(Blockly.Msg.CONTROLS_REPEAT_TOOLTIP);
+    this.setHelpUrl(Blockly.Msg.CONTROLS_REPEAT_HELPURL);
+
+    this.appendStatementInput('DO')
+        .appendField(Blockly.Msg.CONTROLS_REPEAT_INPUT_DO);
+  }
+};
+
+Blockly.JavaScript['controls_forever'] = function(block) {
+  let branch = Blockly.JavaScript.statementToCode(block, 'DO');
+  branch = Blockly.JavaScript.addLoopTrap(branch, block.id);
+  return 'while (true) {\n' + branch + '}\n';
+};

@@ -5,18 +5,7 @@
       <block type="nearestVoxel"></block>
     </value>
   </block>
-  <block type="nearestVoxel"></block>
   <block type="use"></block>
   <block type="jump"></block>
-  <block type="controls_if"></block>
-  <block type="controls_repeat_ext">
-    <value name="TIMES">
-      <block type="math_number"></block>
-    </value>
-  </block>
-  <block type="logic_compare"></block>
-  <block type="math_number"></block>
-  <block type="math_arithmetic"></block>
-  <block type="text"></block>
-  <block type="text_print"></block>
+  <block type="controls_forever"></block>
 </xml>
