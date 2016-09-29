@@ -55,13 +55,14 @@ import TransitionCamera from '@buffy/voxel-engine/lib/cameras/TransitionCamera';
 import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
 import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
 
-import Overlay from '../components/Overlay';
+import Overlay from '../ui/Overlay';
+import TipBalloon from '../ui/TipBalloon';
+import LoadingSpinner from '../ui/LoadingSpinner';
+
 import CodeEditor from '../components/CodeEditor';
 import Notification from '../components/Notification';
 import StatusPanel from '../components/StatusPanel';
-import FpsFocus from '../components/FpsFocus';
 import Dialogue from '../components/Dialogue';
-import TipBalloon from '../TipBalloon';
 
 const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
@@ -203,27 +204,25 @@ const count = cwise({
 
 interface MainOptions {
   container: HTMLElement;
-  overlay: Overlay;
   codeEditor: CodeEditor;
   statusPanel: StatusPanel;
   notification: Notification;
-  fpsFocus: FpsFocus;
   dialogue: Dialogue;
-  tipBalloon: TipBalloon;
   vm: VirtualMachine;
 }
 
 function main ({
   container,
-  overlay,
   codeEditor,
   statusPanel,
   notification,
-  fpsFocus,
   dialogue,
-  tipBalloon,
   vm,
 }: MainOptions) {
+  const overlay = new Overlay();
+  const tipBalloon = new TipBalloon();
+  const loadingSpinner = new LoadingSpinner();
+
   Promise.all([
     Game.initShell(),
     fetchChunks(map),
@@ -237,17 +236,6 @@ function main ({
     fetchNonBlockTexture(iconWheatPlusOne2Url),
     fetchNonBlockTexture(iconWheatPlusOne3Url),
   ]).then(result => {
-    const o = document.createElement('div');
-    document.body.appendChild(o);
-    o.style.display = 'none';
-    o.style.position = 'absolute';
-    o.style.top = '0';
-    o.style.bottom = '0';
-    o.style.left = '0';
-    o.style.right = '0';
-    o.style.background = 'rgba(0, 0, 0, 0.5)';
-    o.style.zIndex = '2000';
-
     const [
       shell,
       chunks,
@@ -584,8 +572,16 @@ function main ({
       // Rendering
 
       const fsm = new ModeFsm();
-      const fpsMode = new FpsMode(fsm, game, player, fpsFocus, statusPanel);
+      const fpsMode = new FpsMode(fsm, game, player);
       const topDownMode = new TopDownMode(fsm, game, codeEditor);
+
+      fpsMode.on('enter', () => {
+        statusPanel.show();
+      });
+
+      fpsMode.on('leave', () => {
+        statusPanel.hide();
+      });
 
       fsm.init({
         fpsMode,
@@ -602,21 +598,23 @@ function main ({
         if (topDownEntered) return;
         topDownEntered = true;
 
-        o.style.display = 'block';
+        overlay.show();
+
         player.emit('message', helper, `Let's start to teach Cubie how to work!`, () => {
-          o.style.display = 'none';
+          const actionButton = codeEditor.actionButton;
 
-          const actionButton = codeEditor.actionButton; // getActionButton();
-
-          tipBalloon.show();
-          tipBalloon.attach(actionButton);
+          tipBalloon.show(actionButton);
 
           const p0 = getPoint0(tipBalloon.balloon);
           const p1 = getPoint1(actionButton);
 
-          tipBalloon.makeHole(p0.x - MARGIN, p0.y - MARGIN, p1.x + MARGIN, p1.y + MARGIN);
+          overlay.setHighlighedElements([
+            tipBalloon.balloon,
+            actionButton,
+          ]);
 
           codeEditor.once('play', () => {
+            overlay.hide();
             tipBalloon.hide();
 
             player.emit('message', helper, `Good job!`, () => {
@@ -638,6 +636,7 @@ function main ({
       game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position[0], position[1], position[2]));
 
       overlay.hide();
+      loadingSpinner.hide();
     });
   }).catch(err => {
     console.error(err);

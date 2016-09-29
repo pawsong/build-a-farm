@@ -1,13 +1,14 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+import { EventEmitter } from 'events';
+
 import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import mat4 from 'gl-matrix/src/gl-matrix/mat4';
 const createRay = require('ray-aabb');
+import createElement from '../../../utils/createElement';
 
-import ModeFsm, { ModeState } from './ModeFsm';
-
-// import ModeFsm, {
-//   ModeState,
-//   STATE_TRANSITION,
-// } from './ModeFsm';
+import ModeFsm, { ModeState } from '../ModeFsm';
 
 import {
   Game,
@@ -17,15 +18,14 @@ import {
 
 import Character, {
   fpsControlOptions,
-} from '../Character';
+} from '../../Character';
 
 import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
 import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
 
-import FpsFocus from '../../components/FpsFocus';
-import StatusPanel from '../../components/StatusPanel';
+import FpsFocus from './FpsFocus';
 
-import { RAY_MIN_DIST } from '../constants';
+import { RAY_MIN_DIST } from '../../constants';
 
 const cp = vec3.create();
 const cv = vec3.create();
@@ -60,13 +60,16 @@ class FpsMode extends ModeState<void> {
   controls: FpsControl;
 
   fpsFocus: FpsFocus;
-  statusPanel: StatusPanel;
   focusedObject: Character;
 
   player: Character;
+  emitter: EventEmitter;
 
-  constructor(fsm: ModeFsm, game: Game, player: Character, fpsFocus: FpsFocus, statusPanel: StatusPanel) {
+  constructor(fsm: ModeFsm, game: Game, player: Character) {
     super(fsm);
+
+    this.emitter = new EventEmitter();
+    this.fpsFocus = ReactDOM.render(<FpsFocus />, createElement()) as FpsFocus;
 
     this.game = game;
     this.player = player;
@@ -76,8 +79,6 @@ class FpsMode extends ModeState<void> {
     this.ray = createRay([0, 0, 0], [0, 0, 1]);
     this.camera = new FpsCamera(player);
 
-    this.fpsFocus = fpsFocus;
-    this.statusPanel = statusPanel;
     this.focusedObject = null;
 
     // cleanup key name - based on https://github.com/mikolalysenko/game-shell/blob/master/shell.js
@@ -109,6 +110,11 @@ class FpsMode extends ModeState<void> {
     this.controls.target(player.physics, player, this.camera.camera);
   }
 
+  on(type: string, handler: Function) {
+    this.emitter.on(type, handler);
+    return this;
+  }
+
   onEnter() {
     const { shell } = this.game;
     shell.pointerLock = true;
@@ -118,9 +124,10 @@ class FpsMode extends ModeState<void> {
 
     this.focusedObject = null;
     this.fpsFocus.setVisible(false);
-    this.statusPanel.show();
 
     window.addEventListener('mousedown', this.handleMouseDown);
+
+    this.emitter.emit('enter');
   }
 
   handleMouseDown = (e: MouseEvent) => {
@@ -170,7 +177,7 @@ class FpsMode extends ModeState<void> {
 
       if (result) {
         minDist = distance;
-        focusedObject = <Character> object;
+        focusedObject = object as Character;
       }
     }
 
@@ -207,8 +214,9 @@ class FpsMode extends ModeState<void> {
 
   onLeave() {
     this.fpsFocus.setVisible(false);
-    this.statusPanel.hide();
     window.removeEventListener('mousedown', this.handleMouseDown);
+
+    this.emitter.emit('leave');
   }
 }
 
