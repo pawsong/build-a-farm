@@ -127,25 +127,23 @@ class FpsMode extends ModeState<void> {
 
     window.addEventListener('mousedown', this.handleMouseDown);
 
+    this.player.on('code', this.handleCode);
     this.emitter.emit('enter');
   }
 
   handleMouseDown = (e: MouseEvent) => {
     if (e.button === 2) {
       if (this.focusedObject) {
-        this.handleUse(this.focusedObject);
         this.focusedObject.emit('used', this.player);
       }
     }
   }
 
-  handleUse(target: Character) {
-    if (target.scriptable) {
-      this.transitionTo(this.fsm.states.transitionMode, {
-        target,
-        viewMatrix: this.camera.viewMatrix,
-      });
-    }
+  handleCode = (target: Character) => {
+    this.transitionTo(this.fsm.states.transitionMode, {
+      target,
+      viewMatrix: this.camera.viewMatrix,
+    });
   };
 
   onResize() {
@@ -217,6 +215,7 @@ class FpsMode extends ModeState<void> {
     window.removeEventListener('mousedown', this.handleMouseDown);
 
     this.emitter.emit('leave');
+    this.player.removeListener('code', this.handleCode);
   }
 }
 

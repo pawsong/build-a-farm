@@ -16,6 +16,7 @@ import PF from 'pathfinding';
 
 const v0 = vec3.create();
 const v1 = vec3.create();
+const v2 = vec3.create();
 
 const cp = vec3.create();
 const cv = vec3.create();
@@ -40,8 +41,6 @@ import {
 
 import achievements from './achievements';
 
-import HelperBehavior from './HelperBehavior';
-
 import BLOCKS from './blocks';
 
 import {
@@ -63,6 +62,10 @@ import CodeEditor from '../components/CodeEditor';
 import Notification from '../components/Notification';
 import StatusPanel from '../components/StatusPanel';
 import Dialogue from '../components/Dialogue';
+
+import HelperBehavior from './behaviors/HelperBehavior';
+import WorkerBehavior from './behaviors/WorkerBehavior';
+import PlayerBehavior from './behaviors/PlayerBehavior';
 
 const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
@@ -313,39 +316,27 @@ function main ({
         notification.show(achievment);
       }
 
-      function handleUseVoxel(gameObject: GameObject, x: number, y: number, z: number) {
+      function handleUseVoxel(gameObject: GameObject, position: vec3) {
+        const [x, y, z] = position;
         const voxelId = game.getVoxel(x, y, z);
+        gameObject.emit('usevoxel', voxelId, position);
 
         switch(voxelId) {
           case 6: {
             gameObject.holdItem(waterdrop);
-
             giveAchievement('GET_WATER');
+            gameObject.emit('getitem', voxelId);
             break;
           }
           case 7: {
             if (gameObject.item === waterdrop) {
               giveAchievement('GROW_A_SPROUT');
-              mapService.setBlock(x, y + 1, z, 8);
-              gameObject.throwItem();
-            }
-            break;
-          }
-          case 8: {
-            if (gameObject.item === waterdrop) {
-              mapService.setBlock(x, y, z, 9);
+              mapService.setBlock(x, y + 1, z, 9);
               gameObject.throwItem();
             }
             break;
           }
           case 9: {
-            if (gameObject.item === waterdrop) {
-              mapService.setBlock(x, y, z, 10);
-              gameObject.throwItem();
-            }
-            break;
-          }
-          case 10: {
             if (gameObject.item === waterdrop) {
               mapService.setBlock(x, y, z, 11);
               gameObject.throwItem();
@@ -354,26 +345,12 @@ function main ({
           }
           case 11: {
             if (gameObject.item === waterdrop) {
-              mapService.setBlock(x, y, z, 12);
-              gameObject.throwItem();
-            }
-            break;
-          }
-          case 12: {
-            if (gameObject.item === waterdrop) {
               mapService.setBlock(x, y, z, 13);
               gameObject.throwItem();
             }
             break;
           }
           case 13: {
-            if (gameObject.item === waterdrop) {
-              mapService.setBlock(x, y, z, 14);
-              gameObject.throwItem();
-            }
-            break;
-          }
-          case 14: {
             if (gameObject.item === waterdrop) {
               mapService.setBlock(x, y, z, 15);
               gameObject.throwItem();
@@ -388,52 +365,15 @@ function main ({
 
             cropCount = cropCount + 1;
             statusPanel.setCropCount(cropCount);
+
+            gameObject.emit('getitem', voxelId);
+            break;
           }
         }
       }
 
-      const helper = new Character('helper', helperModel, {
-        name: 'Helper',
-        scriptable: false,
-      });
-
-      helper.setPosition(20, 2, 38);
-      helper.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      // helper.lookAt(vec3.fromValues(8, 2, 33));
-      helper.addSprite(sprite);
-      // helper.on('appear', () => console.log('good!'));
-      game.addObject(helper);
-
-      const a = new Character('a', cubieModel, {
-        name: 'Cubie A',
-        scriptable: true,
-      });
-      a.setPosition(7, 2, 33);
-      a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      a.lookAt(vec3.fromValues(8, 2, 33));
-      game.addObject(a);
-
-      const b = new Character('b', cubieModel, {
-        name: 'Cubie B',
-        scriptable: true,
-      });
-      b.setPosition(9, 7, 30);
-      b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      b.lookAt(vec3.fromValues(10, 7, 30));
-      game.addObject(b);
-
-      const c = new Character('c', cubieModel, {
-        name: 'Cubie C',
-        scriptable: true,
-      });
-      c.setPosition(11, 4, 36);
-      c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      c.lookAt(vec3.fromValues(12, 4, 36));
-      game.addObject(c);
-
       const player = new Character('player', cubieModel, {
         name: 'Player',
-        scriptable: false,
       });
       player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       player.setPosition(35, 2, 61);
@@ -444,6 +384,45 @@ function main ({
       player.on('message', (speaker, message, callback) => {
         dialogue.showMessage(speaker.name, message).then(() => callback());
       });
+
+      const helper = new Character('helper', helperModel, {
+        name: 'Helper',
+      });
+      helper.setBehavior(new HelperBehavior(helper, player, mapService));
+
+      helper.setPosition(20, 2, 38);
+      helper.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      // helper.lookAt(vec3.fromValues(8, 2, 33));
+      helper.addSprite(sprite);
+      // helper.on('appear', () => console.log('good!'));
+      game.addObject(helper);
+
+      const a = new Character('a', cubieModel, {
+        name: 'Cubie A',
+      });
+      a.setBehavior(new WorkerBehavior(a));
+      a.setPosition(7, 2, 33);
+      a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      a.lookAt(vec3.fromValues(8, 2, 33));
+      game.addObject(a);
+
+      const b = new Character('b', cubieModel, {
+        name: 'Cubie B',
+      });
+      b.setBehavior(new WorkerBehavior(b));
+      b.setPosition(9, 7, 30);
+      b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      b.lookAt(vec3.fromValues(10, 7, 30));
+      game.addObject(b);
+
+      const c = new Character('c', cubieModel, {
+        name: 'Cubie C',
+      });
+      c.setBehavior(new WorkerBehavior(c));
+      c.setPosition(11, 4, 36);
+      c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+      c.lookAt(vec3.fromValues(12, 4, 36));
+      game.addObject(c);
 
       const blocks = [
         game.registry.getBlockIndex(1),
@@ -540,7 +519,7 @@ function main ({
             const { lastReq } = message;
             if (lastReq && lastReq.type === 'moveTo') {
               const position = lastReq.params;
-              handleUseVoxel(object, position[0], position[1], position[2]);
+              handleUseVoxel(object, position);
             } else {
               vec3.copy(cp, object.position);
               cp[1] += 1;
@@ -548,11 +527,11 @@ function main ({
               const result = game.raycastVoxels(cp, object.getDirection(cv), RAY_MIN_DIST, v0, v1);
 
               if (result !== 0) {
-                handleUseVoxel(object,
+                handleUseVoxel(object, vec3.set(v2,
                   Math.round(v0[0] - v1[0]),
                   Math.round(v0[1] - v1[1]),
                   Math.round(v0[2] - v1[2])
-                );
+                ));
               }
             }
             vm.sendResponse(message.objectId, message.requestId);
@@ -590,7 +569,6 @@ function main ({
         toFpsMode: new ToFpsMode(fsm, game, codeEditor),
       }, fpsMode);
 
-      const helperBehavior = new HelperBehavior(mapService, player, helper);
 
       let topDownEntered = false;
 
@@ -630,10 +608,9 @@ function main ({
       shell.on('gl-resize', () => fsm.current.onResize());
       shell.on('gl-render', () => fsm.current.onRender());
       game.on('tick', dt => {
-        helperBehavior.onTick(dt);
         fsm.current.onTick(dt);
       });
-      game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position[0], position[1], position[2]));
+      game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position));
 
       overlay.hide();
       loadingSpinner.hide();
