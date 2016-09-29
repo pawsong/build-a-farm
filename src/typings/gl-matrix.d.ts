@@ -1,3 +1,8 @@
+declare module 'gl-matrix/src/gl-matrix/vec2' {
+  import { vec2 } from 'gl-matrix/gl-matrix-typed';
+  export = vec2;
+}
+
 declare module 'gl-matrix/src/gl-matrix/vec3' {
   import { vec3 } from 'gl-matrix/gl-matrix-typed';
   export = vec3;

@@ -12,13 +12,13 @@ class BaseBehavior extends Behavior{
     this.locks = new Set();
   }
 
-  lock(key: string) {
+  protected lock(key: string) {
     if (this.locks.has(key)) return false;
     this.locks.add(key);
     return true;
   }
 
-  unlock(key: string) {
+  protected unlock(key: string) {
     this.locks.delete(key);
   }
 

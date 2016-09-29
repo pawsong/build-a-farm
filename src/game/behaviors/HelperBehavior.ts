@@ -1,4 +1,6 @@
 import React from 'react';
+import vec2 from 'gl-matrix/src/gl-matrix/vec2';
+
 import Character from '../Character';
 import BaseBehavior from './BaseBehavior';
 import MapService from '../MapService';
@@ -9,7 +11,10 @@ import {
 import {
   BT_WATER_INTRODUCED,
   BT_SPROUT_INTRODUCED,
+  BT_WORKER_INTRODUCED,
 } from '../props/propsBT';
+
+const v1 = vec2.create();
 
 import { QuestFarmProgress } from './constants';
 
@@ -62,7 +67,7 @@ class HelperBehavior extends BaseBehavior {
     if (!target.getPropBT(BT_WATER_INTRODUCED)) {
       await this.sendMessage(target, 'This place is so nice!');
       await this.sendMessage(target, 'Follow me. You can get water here.');
-      await this.moveTo([6]);
+      await this.moveToBlock([6]);
       await this.me.stop();
 
       this.player.on('getitem', this.listenGetWater);
@@ -87,7 +92,7 @@ class HelperBehavior extends BaseBehavior {
   private async introduceSprout(target: Character) {
     if (!target.getPropBT(BT_SPROUT_INTRODUCED)) {
       await this.sendMessage(target, 'Now you can grow a sprout');
-      await this.moveTo([7]);
+      await this.moveToBlock([7]);
       await this.me.stop();
 
       target.on('usevoxel', this.listenUseWater);
@@ -124,28 +129,55 @@ class HelperBehavior extends BaseBehavior {
   }
 
   /**
-   * Step 4: goCubie
+   * Step 4: introduceWorker
    */
   private async introduceWorker(target: Character) {
-    await this.sendMessage(target, `Well done! Now you know how to get a wheat`);
-    await this.sendMessage(target, `We need wheat hmm... at least 20`);
-    await this.sendMessage(target, `It would be hard to grow the whole wheat on your own`);
-    await this.sendMessage(target, `Let me introduce people who can help you`);
+    if (!target.getPropBT(BT_WORKER_INTRODUCED)) {
+      await this.sendMessage(target, `Well done! Now you know how to get a wheat`);
+      await this.sendMessage(target, `We need wheat hmm... at least 20`);
+      await this.sendMessage(target, `It would be hard to grow the whole wheat on your own`);
+      await this.sendMessage(target, `Let me introduce people who can help you`);
+
+      const worker = this.me.getNearestObject(this.filterWorker);
+      const direction = vec2.set(v1,
+        worker.position[0] - this.me.position[0],
+        worker.position[2] - this.me.position[2]
+      );
+      vec2.normalize(v1, v1);
+
+      await this.moveTo(
+        Math.round(worker.position[0] - v1[0]),
+        this.me.position[1],
+        Math.round(worker.position[2] - v1[1])
+      );
+      await this.me.stop();
+
+      target.setPropBT(BT_WORKER_INTRODUCED, true);
+    }
+
+    await this.me.jump();
+    await this.sendMessage(target, 'Talk to worker');
   }
+
+  private filterWorker = (object: Character) => object !== this.player;
 
   /**
    * Private methods
    */
 
-  private async moveTo(blockIds: number[]) {
-    this.moving++;
-
+  private async moveToBlock(blockIds: number[]) {
     const { position } = this.me;
 
     const result = this.mapService.searchForNearestVoxel(position, blockIds);
     const [voxelId, p0, p1] = result;
 
-    const path = this.mapService.findPath(position, [p0, position[1], p1]);
+    await this.moveTo(p0, position[1], p1);
+  }
+
+  private async moveTo(x: number, y: number, z: number) {
+    this.moving++;
+
+    const path = this.mapService.findPath(this.me.position, [x, y, z]);
     await this.me.move(path);
 
     this.moving--;
