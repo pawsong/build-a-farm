@@ -140,6 +140,7 @@ class FpsMode extends ModeState<void> {
   }
 
   handleCode = (target: Character) => {
+    target.emit('codeready');
     this.transitionTo(this.fsm.states.transitionMode, {
       target,
       viewMatrix: this.camera.viewMatrix,

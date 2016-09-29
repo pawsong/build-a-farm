@@ -94,24 +94,6 @@ const CHUNK_SHAPE = [
 ];
 const CHUNK_ARRAY_SIZE = CHUNK_SHAPE[0] * CHUNK_SHAPE[1] * CHUNK_SHAPE[2];
 
-const MARGIN = 20;
-
-function getPoint0(element: HTMLElement) {
-  const rect = element.getBoundingClientRect();
-  return {
-    x: rect.left,
-    y: rect.top,
-  };
-}
-
-function getPoint1(element: HTMLElement) {
-  const rect = element.getBoundingClientRect();
-  return {
-    x: rect.right,
-    y: rect.bottom,
-  };
-}
-
 // Stats
 const stats = new Stats();
 stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -400,7 +382,7 @@ function main ({
       const a = new Character('a', cubieModel, {
         name: 'Cubie A',
       });
-      a.setBehavior(new WorkerBehavior(a));
+      a.setBehavior(new WorkerBehavior(a, player, codeEditor, overlay, tipBalloon));
       a.setPosition(7, 2, 33);
       a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       a.lookAt(vec3.fromValues(8, 2, 33));
@@ -409,7 +391,7 @@ function main ({
       const b = new Character('b', cubieModel, {
         name: 'Cubie B',
       });
-      b.setBehavior(new WorkerBehavior(b));
+      b.setBehavior(new WorkerBehavior(b, player, codeEditor, overlay, tipBalloon));
       b.setPosition(9, 7, 30);
       b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       b.lookAt(vec3.fromValues(10, 7, 30));
@@ -418,7 +400,7 @@ function main ({
       const c = new Character('c', cubieModel, {
         name: 'Cubie C',
       });
-      c.setBehavior(new WorkerBehavior(c));
+      c.setBehavior(new WorkerBehavior(c, player, codeEditor, overlay, tipBalloon));
       c.setPosition(11, 4, 36);
       c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
       c.lookAt(vec3.fromValues(12, 4, 36));
@@ -568,42 +550,6 @@ function main ({
         topDownMode,
         toFpsMode: new ToFpsMode(fsm, game, codeEditor),
       }, fpsMode);
-
-
-      let topDownEntered = false;
-
-      topDownMode.on('enter', () => {
-        if (topDownEntered) return;
-        topDownEntered = true;
-
-        overlay.show();
-
-        player.emit('message', helper, `Let's start to teach Cubie how to work!`, () => {
-          const actionButton = codeEditor.actionButton;
-
-          tipBalloon.show(actionButton);
-
-          const p0 = getPoint0(tipBalloon.balloon);
-          const p1 = getPoint1(actionButton);
-
-          overlay.setHighlighedElements([
-            tipBalloon.balloon,
-            actionButton,
-          ]);
-
-          codeEditor.once('play', () => {
-            overlay.hide();
-            tipBalloon.hide();
-
-            player.emit('message', helper, `Good job!`, () => {
-            });
-          });
-        });
-      });
-
-      topDownMode.on('leave', () => {
-        console.log('leave!');
-      });
 
       shell.on('gl-resize', () => fsm.current.onResize());
       shell.on('gl-render', () => fsm.current.onRender());

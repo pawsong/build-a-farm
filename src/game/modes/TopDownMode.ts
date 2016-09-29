@@ -21,6 +21,7 @@ class TopDownMode extends ModeState<Params> {
   camera: TopDownCamera;
   emitter: EventEmitter;
   codeEditor: CodeEditor;
+  target: GameObject;
 
   constructor(fsm: ModeFsm, game: Game, codeEditor: CodeEditor) {
     super(fsm);
@@ -41,12 +42,16 @@ class TopDownMode extends ModeState<Params> {
     return this;
   }
 
-  onEnter({ target }) {
-    this.camera.changeTarget(target);
+  onEnter({ target }: Params) {
+    this.target = target;
+
+    this.camera.changeTarget(this.target);
     this.onResize();
-    this.emitter.emit('enter');
 
     this.codeEditor.once('close', this.tryLeave);
+
+    this.target.emit('codebegin');
+    this.emitter.emit('enter');
   }
 
   onResize() {
@@ -65,6 +70,8 @@ class TopDownMode extends ModeState<Params> {
 
   onLeave() {
     this.codeEditor.removeListener('close', this.tryLeave);
+    this.target.emit('codeend');
+    this.target = null;
   }
 }
 
