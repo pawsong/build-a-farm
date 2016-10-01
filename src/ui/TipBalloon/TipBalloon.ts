@@ -12,7 +12,10 @@ class TipBalloon {
   constructor() {
     this.balloon = createElement();
     this.balloon.classList.add(styles.balloon);
+    const a = document.createElement('div');
+    a.classList.add(styles.arrow);
     this.balloon.innerHTML = '<div>Click this button and see what happens!</div>';
+    this.balloon.appendChild(a);
 
     this.hide();
   }

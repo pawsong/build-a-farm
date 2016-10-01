@@ -12,8 +12,7 @@
   -webkit-font-smoothing: none;
 }
 
-.balloon:before {
-  content: "";
+.arrow {
   display: block;
   position: absolute;
   width: 0;

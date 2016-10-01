@@ -43,6 +43,7 @@ class WorkerBehavior extends BaseBehavior {
         break;
       }
       case QuestFarmProgress.WHEAT_FOUND:
+      case QuestFarmProgress.ACTION_BUTTON_FOUND:
       {
         source.emit('code', this.me);
         break;
@@ -60,6 +61,9 @@ class WorkerBehavior extends BaseBehavior {
   private handleCodeReady = () => {
     switch (this.player.getPropN(N_QUEST_FARM_PROGRESS)) {
       case QuestFarmProgress.WHEAT_FOUND: {
+        break;
+      }
+      case QuestFarmProgress.ACTION_BUTTON_FOUND: {
         break;
       }
     }
@@ -107,22 +111,26 @@ class WorkerBehavior extends BaseBehavior {
 
   async introduceActionButton(target: Character) {
     this.overlay.show();
-    await this.p(this.sendMessage(target, `Let's start teaching!`));
+    await this.p(this.sendMessage(target, `Let's start coding!`));
 
     const { actionButton } = this.codeEditor;
     this.tipBalloon.show(actionButton);
 
     this.overlay.setHighlighedElements([
-      this.tipBalloon.balloon,
       actionButton,
     ]);
 
     await this.p(new Promise(resolve => this.codeEditor.once('play', resolve)));
+    target.setPropN(N_QUEST_FARM_PROGRESS, QuestFarmProgress.ACTION_BUTTON_FOUND);
 
     this.overlay.hide();
     this.tipBalloon.hide();
 
     await this.p(this.sendMessage(target, 'Good job!'));
+
+    // const root = this.codeEditor.workspace.getTopBlocks()[0].getSvgRoot();
+    // this.tipBalloon.show(root);
+    // this.overlay.show([root]);
   }
 }
 

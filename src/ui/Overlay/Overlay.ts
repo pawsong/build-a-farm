@@ -9,7 +9,7 @@ interface Rect {
   y1: number;
 }
 
-const MARGIN = 12;
+const MARGIN = 5;
 
 function createOverlay() {
   const overlay = createElement();
