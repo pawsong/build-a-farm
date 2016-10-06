@@ -6,6 +6,7 @@ const styles = require('./TipBalloon.css');
 
 class TipBalloon {
   balloon: HTMLElement;
+  content: HTMLElement;
 
   tether: Tether;
 
@@ -14,15 +15,18 @@ class TipBalloon {
     this.balloon.classList.add(styles.balloon);
     const a = document.createElement('div');
     a.classList.add(styles.arrow);
-    this.balloon.innerHTML = '<div>Click this button and see what happens!</div>';
     this.balloon.appendChild(a);
+
+    this.content = document.createElement('div');
+    this.balloon.appendChild(this.content);
+    this.content.innerHTML = '<div>Click this button and see what happens!</div>';
 
     this.hide();
   }
 
-  show(target: HTMLElement) {
+  show(target: HTMLElement, content: string) {
     this.balloon.style.display = 'block';
-    this.attach(target);
+    this.attach(target, content);
   }
 
   hide() {
@@ -33,7 +37,9 @@ class TipBalloon {
     }
   }
 
-  attach(target: HTMLElement) {
+  attach(target: HTMLElement, content: string) {
+    this.content.innerHTML = content;
+
     if (this.tether) {
       this.tether.destroy();
     }

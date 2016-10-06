@@ -11,6 +11,28 @@ import {
 
 const codeEndError = new Error('code ended');
 
+function waitForClick() {
+  return new Promise((resolve) => {
+    function listener() {
+      document.body.removeEventListener('mousedown', listener, true);
+      resolve();
+    }
+    document.body.addEventListener('mousedown', listener, true);
+  });
+}
+
+function waitWorkspaceChange(workspace: any, checker: (event: any) => boolean) {
+  return new Promise(resolve => {
+    function listener(event: any) {
+      if (checker(event)) {
+        resolve();
+        workspace.removeChangeListener(listener);
+      }
+    }
+    workspace.addChangeListener(listener);
+  });
+}
+
 class WorkerBehavior extends BaseBehavior {
   codeEditor: CodeEditor;
   overlay: Overlay;
@@ -78,6 +100,10 @@ class WorkerBehavior extends BaseBehavior {
           await this.introduceActionButton(source);
           break;
         }
+        case QuestFarmProgress.ACTION_BUTTON_FOUND: {
+          await this.introduceBasicButtons(source);
+          break;
+        }
       }
     } catch(err) {
     }
@@ -113,8 +139,12 @@ class WorkerBehavior extends BaseBehavior {
     this.overlay.show();
     await this.p(this.sendMessage(target, `Let's start coding!`));
 
+    await this.p(this.sendMessage(target, `This is coding view`));
+
+    await this.p(this.sendMessage(target, `Remember you can always exit this by ESC or EXIT button`));
+
     const { actionButton } = this.codeEditor;
-    this.tipBalloon.show(actionButton);
+    this.tipBalloon.show(actionButton, 'Click this button and see what happens!');
 
     this.overlay.setHighlighedElements([
       actionButton,
@@ -127,10 +157,31 @@ class WorkerBehavior extends BaseBehavior {
     this.tipBalloon.hide();
 
     await this.p(this.sendMessage(target, 'Good job!'));
+  }
 
-    // const root = this.codeEditor.workspace.getTopBlocks()[0].getSvgRoot();
-    // this.tipBalloon.show(root);
-    // this.overlay.show([root]);
+  async introduceBasicButtons(target: Character) {
+    const { workspace } = this.codeEditor;
+    const root = workspace.getTopBlocks()[0];
+    const rootSvg = root.getSvgRoot();
+    this.tipBalloon.show(rootSvg, 'When run button clicked, this code is executedw');
+    this.overlay.show([rootSvg]);
+
+    await this.p(waitForClick());
+
+    const child = workspace.getTopBlocks()[0].getChildren()[0];
+    const svg = child.getSvgRoot();
+    this.tipBalloon.show(svg, 'You can detach logic and use another one');
+    this.overlay.show([svg]);
+
+    await this.p(waitWorkspaceChange(workspace, (e) => {
+      return root.getChildren().length === 0;
+    }));
+
+    this.tipBalloon.hide();
+    this.overlay.hide();
+
+    await this.p(this.sendMessage(target, 'You successfuly detached!'));
+    await this.p(this.sendMessage(target, `Let's make robot rotate!`));
   }
 }
 
