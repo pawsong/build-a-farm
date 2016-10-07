@@ -7,9 +7,17 @@ import {
   WM_THREAD_START, WmThreadStartParams,
   WM_THREAD_STOP, WmThreadStopParams,
   WM_API_REQUEST, WmApiRequestParams,
+  WM_HIGHLIGHT_BLOCK, WmHighlightBlockParams,
 } from './shared';
 import IdIssuer from './IdIssuer';
 const ScriptWorker = require('worker!./worker');
+
+export interface ThreadInfo {
+  threadId: number;
+  objectId: string;
+  process: ChildProcess;
+  blockId: string;
+}
 
 class ChildProcess {
   threads: Set<number /* threadId */>;
@@ -53,12 +61,6 @@ class ChildProcess {
   }
 }
 
-export interface ThreadInfo {
-  threadId: number;
-  objectId: string;
-  process: ChildProcess;
-}
-
 class VirtualMachine extends EventEmitter {
   static threadIdIssuer = new IdIssuer();
 
@@ -92,6 +94,7 @@ class VirtualMachine extends EventEmitter {
       objectId,
       threadId,
       process: child,
+      blockId: '',
     };
     this.threads.set(objectId, thread);
 
@@ -139,6 +142,12 @@ class VirtualMachine extends EventEmitter {
         this.emit('api', thread.process, event.data);
         break;
       }
+      case WM_HIGHLIGHT_BLOCK: {
+        const { blockId } = <WmHighlightBlockParams> event.data;
+        thread.blockId = blockId;
+        this.emit('highlight', thread);
+        break;
+      }
       default: {
         break;
       }
@@ -157,6 +166,9 @@ interface VirtualMachine {
 
   emit(event: 'api', child: ChildProcess, params: WmApiRequestParams): boolean;
   on(event: 'api', listener: (child: ChildProcess, params: WmApiRequestParams) => any): this;
+
+  emit(event: 'highlight', thread: ThreadInfo): boolean;
+  on(event: 'highlight', listener: (thread: ThreadInfo) => any): this;
 
   emit(event: string, ...args: any[]): boolean;
   on(event: string, listener: Function): this;

@@ -26,6 +26,12 @@ interface CodeEditorState {
   characterName?: string;
 }
 
+function ensureTraceOn(workspace: any) {
+  if (!workspace.traceOn_) {
+    workspace.traceOn(true);
+  }
+}
+
 class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
   // Elements
   root: HTMLElement;
@@ -62,17 +68,25 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
     if (this.workspaceWrapper) return;
 
     // Init state
+    const thread = this.props.vm.getThreadInfo(object.id);
     this.setState({
-      thread: this.props.vm.getThreadInfo(object.id),
+      thread,
       characterName: object.name,
     });
     this.root.style.display = '';
 
     // Mount workspace
     this.workspaceWrapper = this.workspaceManager.activateWorkspace(object.id);
+    const { workspace } = this.workspaceWrapper;
+    ensureTraceOn(workspace);
+
+    if (thread) {
+      workspace.highlightBlock(thread.blockId);
+    }
 
     document.addEventListener('keydown', this.handleKeydown);
     this.props.vm.on('stop', this.handleProcessStop);
+    this.props.vm.on('highlight', this.handleHighlightBlock);
     window.addEventListener('resize', this.handleResize, false);
   }
 
@@ -92,6 +106,7 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
 
     document.removeEventListener('keydown', this.handleKeydown);
     this.props.vm.removeListener('stop', this.handleProcessStop);
+    this.props.vm.removeListener('highlight', this.handleHighlightBlock);
     window.removeEventListener('resize', this.handleResize, false);
   }
 
@@ -118,7 +133,13 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
 
   private handleProcessStop = (thread: ThreadInfo) => {
     if (this.state.thread === thread) {
-      this.setState({ thread: null });
+      this.setThreadState(null);
+    }
+  }
+
+  private handleHighlightBlock = (thread: ThreadInfo) => {
+    if (this.state.thread === thread) {
+      this.workspaceWrapper.workspace.highlightBlock(thread.blockId);
     }
   }
 
@@ -143,10 +164,10 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
   private handleToggleScript = () => {
     if (this.state.thread) {
       this.stop();
-      this.setState({ thread: null });
+      this.setThreadState(null);
     } else {
       const thread = this.play();
-      this.setState({ thread });
+      this.setThreadState(thread);
     }
   }
 
@@ -156,6 +177,7 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
 
   private play() {
     const { workspace, objectId } = this.workspaceWrapper;
+    ensureTraceOn(workspace);
 
     const dom = Blockly.Xml.workspaceToDom(workspace);
     const xml = Blockly.Xml.domToText(dom);
@@ -175,6 +197,11 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
     this.emitter.emit('play');
 
     return thread;
+  }
+
+  private setThreadState(thread: ThreadInfo) {
+    this.setState({ thread });
+    this.workspaceWrapper.workspace.highlightBlock(thread ? thread.blockId : '');
   }
 
   render() {

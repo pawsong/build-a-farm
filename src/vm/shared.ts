@@ -27,6 +27,11 @@ export interface MwResponseParams {
   params: any;
 }
 
+export const WM_HIGHLIGHT_BLOCK = 'WM_HIGHLIGHT_BLOCK';
+export interface WmHighlightBlockParams extends WmBaseParams {
+  blockId: string;
+}
+
 export const WM_API_REQUEST = 'WM_API_REQUEST';
 export interface WmApiRequestParams extends WmBaseParams {
   requestId: number;

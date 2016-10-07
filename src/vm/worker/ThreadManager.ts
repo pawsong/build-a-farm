@@ -42,7 +42,7 @@ class ThreadManager {
     const thread: Thread = {
       objectId,
       threadId,
-      interpreter: new Interpreter(code, createInitInterpreter(this, objectId)),
+      interpreter: new Interpreter(code, createInitInterpreter(this, threadId, objectId)),
       pendingRequests: new Set(),
     };
     this.threads.push(thread);

@@ -8,6 +8,10 @@ import {
 
 import Blockly from './Blockly';
 
+// TODO: Make optional
+Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
+Blockly.JavaScript.addReservedWords('highlightBlock');
+
 /* Styling */
 
 Blockly.Blocks.math.HUE = blueGrey200;
