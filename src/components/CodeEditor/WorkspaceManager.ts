@@ -43,11 +43,11 @@ function createWorkspace(objectId: string, xml: string): WorkspaceWrapper {
     workspace = Blockly.inject(container, {
       toolbox,
       media,
-      grid: {
-        spacing: 20,
-        length: 3,
-        colour: '#ccc',
-      },
+      // grid: {
+      //   spacing: 20,
+      //   length: 3,
+      //   colour: '#ccc',
+      // },
       // trashcan: true,
       // scrollbars: true,
     });

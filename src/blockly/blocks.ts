@@ -43,6 +43,8 @@ Blockly.Blocks['when_run'] = {
     this.appendDummyInput().appendField('when run');
     this.setPreviousStatement(false);
     this.setNextStatement(true);
+    this.setDeletable(false);
+    this.setMovable(false);
   },
   shouldBeGrayedOut: () => false,
 };
