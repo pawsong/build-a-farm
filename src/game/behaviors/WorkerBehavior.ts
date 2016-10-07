@@ -160,7 +160,7 @@ class WorkerBehavior extends BaseBehavior {
   }
 
   async introduceBasicButtons(target: Character) {
-    const { workspace } = this.codeEditor;
+    const { workspace } = this.codeEditor.workspaceWrapper;
     const root = workspace.getTopBlocks()[0];
     const rootSvg = root.getSvgRoot();
     this.tipBalloon.show(rootSvg, 'When run button clicked, this code is executedw');
