@@ -95,7 +95,7 @@ class HelperBehavior extends BaseBehavior {
       await this.moveToBlock([7]);
       await this.me.stop();
 
-      target.on('usevoxel', this.listenUseWater);
+      target.on('voxelused', this.listenUseWater);
       target.setPropBT(BT_SPROUT_INTRODUCED, true);
     }
     await this.me.jump();
@@ -105,7 +105,7 @@ class HelperBehavior extends BaseBehavior {
   private listenUseWater = (voxelId: number) => {
     if (voxelId !== 7) return;
 
-    this.player.removeListener('usevoxel', this.listenUseWater);
+    this.player.removeListener('voxelused', this.listenUseWater);
     this.player.setPropN(N_QUEST_FARM_PROGRESS, QuestFarmProgress.SPROUT_FOUND);
   }
 

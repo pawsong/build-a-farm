@@ -301,7 +301,6 @@ function main ({
       function handleUseVoxel(gameObject: GameObject, position: vec3) {
         const [x, y, z] = position;
         const voxelId = game.getVoxel(x, y, z);
-        gameObject.emit('usevoxel', voxelId, position);
 
         switch(voxelId) {
           case 6: {
@@ -352,6 +351,8 @@ function main ({
             break;
           }
         }
+
+        gameObject.emit('voxelused', voxelId, position);
       }
 
       const player = new Character('player', cubieModel, {
@@ -537,7 +538,7 @@ function main ({
       game.on('tick', dt => {
         fsm.current.onTick(dt);
       });
-      game.on('useVoxel', (position: vec3) => handleUseVoxel(player, position));
+      player.on('usevoxel', (position: vec3) => handleUseVoxel(player, position));
 
       overlay.hide();
       loadingSpinner.hide();

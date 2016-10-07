@@ -125,16 +125,18 @@ class FpsMode extends ModeState<void> {
     this.focusedObject = null;
     this.fpsFocus.setVisible(false);
 
-    window.addEventListener('mousedown', this.handleMouseDown);
+    window.addEventListener('click', this.handleClick);
 
     this.player.on('code', this.handleCode);
     this.emitter.emit('enter');
   }
 
-  handleMouseDown = (e: MouseEvent) => {
-    if (e.button === 2) {
+  handleClick = (e: MouseEvent) => {
+    if (e.button === 0) {
       if (this.focusedObject) {
         this.focusedObject.emit('used', this.player);
+      } else if (this.game.focusedVoxel) {
+        this.player.emit('usevoxel', this.game.focusedVoxel);
       }
     }
   }
@@ -213,7 +215,7 @@ class FpsMode extends ModeState<void> {
 
   onLeave() {
     this.fpsFocus.setVisible(false);
-    window.removeEventListener('mousedown', this.handleMouseDown);
+    window.removeEventListener('click', this.handleClick);
 
     this.emitter.emit('leave');
     this.player.removeListener('code', this.handleCode);
