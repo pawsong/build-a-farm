@@ -1,11 +1,10 @@
 <xml id="toolbox">
   <block type="when_run"></block>
-  <block type="moveTo">
+  <block type="use">
     <value name="POSITION">
       <block type="nearestVoxel"></block>
     </value>
   </block>
-  <block type="use"></block>
   <block type="jump"></block>
   <block type="controls_forever"></block>
 </xml>

@@ -13,96 +13,93 @@ import {
 
 const styles = require('./CodeEditor.css');
 
-import VirtualMachine, { CompiledScript } from '../../vm/VirtualMachine';
+import VirtualMachine, { ThreadInfo } from '../../vm/VirtualMachine';
 import Character from '../../game/Character';
+import WorkspaceManager, { WorkspaceWrapper } from './WorkspaceManager';
 
 interface CodeEditorProps {
   vm: VirtualMachine;
 }
 
 interface CodeEditorState {
-  running?: boolean;
-  object?: Character;
-}
-
-interface ScriptStore {
-  [index: string]: string;
+  thread?: ThreadInfo;
+  characterName?: string;
 }
 
 class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
+  // Elements
   root: HTMLElement;
   editor: HTMLElement;
   actionButton: HTMLElement;
 
-  opened: boolean;
-  workspace: any;
-  scripts: ScriptStore;
+  // Blockly workspace
+  workspaceWrapper: WorkspaceWrapper;
+  workspaceManager: WorkspaceManager;
 
-  emitter: EventEmitter;
+  private emitter: EventEmitter;
 
-  constructor(props) {
+  constructor(props: CodeEditorProps) {
     super(props);
-    this.state = {
-      running: false,
-    };
 
-    this.scripts = {};
+    this.state = {
+      thread: null,
+      characterName: '',
+    };
 
     this.emitter = new EventEmitter();
   }
 
   private componentDidMount() {
     this.root = findDOMNode<HTMLElement>(this.refs['root']);
-    this.root.style.display = 'none';
-
     this.editor = findDOMNode<HTMLElement>(this.refs['editor']);
-    window.addEventListener('resize', this.handleResize, false);
-
     this.actionButton = findDOMNode<HTMLElement>(this.refs['actionButton']);
-  }
 
-  private handleResize = () => {
-    if (this.workspace) Blockly.svgResize(this.workspace);
+    this.root.style.display = 'none';
+    this.workspaceManager = new WorkspaceManager(this.editor);
   }
 
   open(object: Character) {
-    if (this.opened) return;
-    this.opened = true;
+    if (this.workspaceWrapper) return;
 
-    const running = this.props.vm.isRunning(object.id);
-    if (this.state.running !== running) this.setState({ running });
-
-    this.setState({ object });
-
+    // Init state
+    this.setState({
+      thread: this.props.vm.getThreadInfo(object.id),
+      characterName: object.name,
+    });
     this.root.style.display = '';
 
-    if (!this.workspace) {
-      this.workspace = Blockly.inject(this.editor, {
-        toolbox,
-        media,
-      });
-      Blockly.JavaScript.init(this.workspace);
-
-      const dom = Blockly.Xml.textToDom(initblocks);
-      Blockly.Xml.domToWorkspace(dom, this.workspace);
-    }
+    // Mount workspace
+    this.workspaceWrapper = this.workspaceManager.activateWorkspace(object.id);
 
     document.addEventListener('keydown', this.handleKeydown);
+    this.props.vm.on('stop', this.handleProcessStop);
+    window.addEventListener('resize', this.handleResize, false);
   }
 
   close() {
-    if (!this.opened) return;
-    this.opened = false;
+    if (!this.workspaceWrapper) return;
 
-    this.setState({ object: null });
+    // Reset state
+    this.setState({
+      thread: null,
+      characterName: '',
+    });
     this.root.style.display = 'none';
 
+    // Unmount workspace
+    this.workspaceManager.deactivateWorkspace(this.workspaceWrapper);
+    this.workspaceWrapper = null;
+
     document.removeEventListener('keydown', this.handleKeydown);
+    this.props.vm.removeListener('stop', this.handleProcessStop);
+    window.removeEventListener('resize', this.handleResize, false);
   }
 
   setOpacity(opacity: number) {
     this.root.style.opacity = `${opacity}`;
   }
+
+  // Events
 
   on(event: string, handler: Function) {
     this.emitter.on(event, handler);
@@ -119,64 +116,72 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
     return this;
   }
 
-  private handleToggleScript = () => {
-    if (this.state.running) {
-      this.setState({ running: false });
-      this.stop();
-    } else {
-      this.setState({ running: true });
-      this.play();
+  private handleProcessStop = (thread: ThreadInfo) => {
+    if (this.state.thread === thread) {
+      this.setState({ thread: null });
     }
   }
 
-  private play() {
-    const dom = Blockly.Xml.workspaceToDom(this.workspace);
-    const xml = Blockly.Xml.domToText(dom);
+  private handleResize = () => {
+    Blockly.svgResize(this.workspaceWrapper.workspace);
+  }
 
-    const scripts: CompiledScript = {};
+  private handleCloseButtonClick = () => {
+    this.emitter.emit('close');
+  }
 
-    for (const block of this.workspace.getTopBlocks()) {
-      let event;
-
-      switch(block.type) {
-        case 'when_run': {
-          event = 'when_run';
-          break;
-        }
+  private handleKeydown = (e: KeyboardEvent) => {
+    switch(e.keyCode) {
+      // ESC
+      case 27: {
+        this.emitter.emit('close');
+        break;
       }
+    }
+  }
 
-      if (event) {
-        if (!scripts[event]) scripts[event] = [];
-        const code = Blockly.JavaScript.blockToCode(block);
-        const finalCode = `async () => { ${code} }`;
-        scripts[event].push(finalCode);
-      }
-    };
-
-    this.props.vm.execute(this.state.object.id, scripts);
-
-    this.emitter.emit('play');
+  private handleToggleScript = () => {
+    if (this.state.thread) {
+      this.stop();
+      this.setState({ thread: null });
+    } else {
+      const thread = this.play();
+      this.setState({ thread });
+    }
   }
 
   private stop() {
-    this.props.vm.stop(this.state.object.id);
+    this.props.vm.stop(this.workspaceWrapper.objectId);
   }
 
-  handleCloseButtonClick = () => {
-    this.emitter.emit('close');
-  }
+  private play() {
+    const { workspace, objectId } = this.workspaceWrapper;
 
-  handleKeydown = (e: KeyboardEvent) => {
-    if (e.keyCode !== 27 /* ESC */) return;
+    const dom = Blockly.Xml.workspaceToDom(workspace);
+    const xml = Blockly.Xml.domToText(dom);
 
-    this.emitter.emit('close');
+    const codes = [];
+
+    for (const block of workspace.getTopBlocks()) {
+      switch(block.type) {
+        case 'when_run': {
+          codes.push(Blockly.JavaScript.blockToCode(block));
+          break;
+        }
+      }
+    };
+
+    const thread = this.props.vm.run(objectId, codes.join(''));
+    this.emitter.emit('play');
+
+    return thread;
   }
 
   render() {
     return (
       <div className={styles.root} ref="root">
         <div className={styles.menu}>
-          <div>[ {this.state.object && this.state.object.name} ]</div>
+          <div>[ {this.state.characterName} ]</div>
           <div
             className={styles.close}
             onTouchTap={this.handleCloseButtonClick}
@@ -188,14 +193,17 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
         <FloatingActionButton
           className={styles.actionButton}
           onTouchTap={this.handleToggleScript}
-          secondary={this.state.running}
+          secondary={!!this.state.thread}
           ref="actionButton"
         >
-          {this.state.running ? <Stop /> : <PlayArrow />}
+          {this.state.thread ? <Stop /> : <PlayArrow />}
         </FloatingActionButton>
       </div>
     );
   }
+}
+
+interface CodeEditor {
 }
 
 export default CodeEditor;

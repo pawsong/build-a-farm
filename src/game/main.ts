@@ -29,8 +29,6 @@ import pako from 'pako';
 const msgpack = require('msgpack-lite');
 const cwise = require('cwise');
 
-import Promise from 'bluebird';
-
 import ndarray from 'ndarray';
 const ops = require('ndarray-ops');
 
@@ -194,6 +192,8 @@ interface MainOptions {
   notification: Notification;
   dialogue: Dialogue;
   vm: VirtualMachine;
+  overlay: Overlay;
+  loadingSpinner: LoadingSpinner;
 }
 
 function main ({
@@ -203,10 +203,10 @@ function main ({
   notification,
   dialogue,
   vm,
+  overlay,
+  loadingSpinner,
 }: MainOptions) {
-  const overlay = new Overlay();
   const tipBalloon = new TipBalloon();
-  const loadingSpinner = new LoadingSpinner();
 
   Promise.all([
     Game.initShell(),
@@ -368,7 +368,7 @@ function main ({
       });
 
       const helper = new Character('helper', helperModel, {
-        name: 'Helper',
+        name: 'Neko',
       });
       helper.setBehavior(new HelperBehavior(helper, player, mapService));
 
@@ -469,63 +469,44 @@ function main ({
         game.showChunk(getCachedChunk(position));
       });
 
-      vm.on('message', (message) => {
-        const object = game.getObject(message.objectId);
+      vm.on('stop', thread => {
+        const object = game.getObject(thread.objectId);
+        object.stop(false);
+      });
 
-        switch(message.type) {
+      vm.on('api', async (child, params) => {
+        const object = game.getObject(params.objectId);
+
+        switch(params.api) {
           case 'getNearestVoxels': {
-            const { params: vids } = message;
+            const vids = params.body;
             const { position } = object;
 
             const result = mapService.searchForNearestVoxel(position, vids);
             if (!result) break;
 
             const [voxelId, p0, p1] = result;
-            vm.sendResponse(message.objectId, message.requestId, [
+            child.sendResponse(params.objectId, params.requestId, [
               p0, [8, 9, 10, 11, 12, 13, 14, 15].indexOf(voxelId) === -1 ? 0 : 1, p1,
             ]);
             break;
           }
-          case 'moveTo': {
-            const { params } = message;
-            const { position } = object;
-
-            const path = mapService.findPath(position, params);
-
-            object.move(path).then(() => {
-              vm.sendResponse(message.objectId, message.requestId);
-            });
-            break;
-          }
           case 'use': {
-            const { lastReq } = message;
-            if (lastReq && lastReq.type === 'moveTo') {
-              const position = lastReq.params;
-              handleUseVoxel(object, position);
-            } else {
-              vec3.copy(cp, object.position);
-              cp[1] += 1;
+            const target = params.body;
+            const { position } = object;
+            const path = mapService.findPath(position, target);
 
-              const result = game.raycastVoxels(cp, object.getDirection(cv), RAY_MIN_DIST, v0, v1);
+            await object.move(path);
 
-              if (result !== 0) {
-                handleUseVoxel(object, vec3.set(v2,
-                  Math.round(v0[0] - v1[0]),
-                  Math.round(v0[1] - v1[1]),
-                  Math.round(v0[2] - v1[2])
-                ));
-              }
-            }
-            vm.sendResponse(message.objectId, message.requestId);
+            handleUseVoxel(object, target);
+
+            child.sendResponse(params.objectId, params.requestId);
             break;
           }
           case 'jump': {
-            const { params } = message;
             const { position } = object;
-
-            object.jump().then(() => {
-              vm.sendResponse(message.objectId, message.requestId);
-            });
+            await object.jump();
+            child.sendResponse(params.objectId, params.requestId);
           }
         }
       });

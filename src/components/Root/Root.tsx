@@ -1,23 +1,31 @@
 import React from 'react';
 import { findDOMNode } from 'react-dom';
 
+import Overlay from '../../ui/Overlay';
+import LoadingSpinner from '../../ui/LoadingSpinner';
+import main from '../../game/main';
+
 import CodeEditor from '../CodeEditor';
 import StatusPanel from '../StatusPanel';
 import Notification from '../Notification';
 import Dialogue from '../Dialogue';
 
-import main from '../../game/main';
-
 import VirtualMachine from '../../vm/VirtualMachine';
 
 const styles = require('./Root.css');
 
-class Root extends React.Component<{}, void> {
+interface RootProps {
+  overlay: Overlay;
+  loadingSpinner: LoadingSpinner;
+  cpuCount: number;
+}
+
+class Root extends React.Component<RootProps, void> {
   vm: VirtualMachine;
 
-  constructor(props) {
+  constructor(props: RootProps) {
     super(props);
-    this.vm = new VirtualMachine();
+    this.vm = new VirtualMachine(Math.max(props.cpuCount - 1, 1));
   }
 
   componentDidMount() {
@@ -35,6 +43,8 @@ class Root extends React.Component<{}, void> {
       statusPanel,
       dialogue,
       vm: this.vm,
+      overlay: this.props.overlay,
+      loadingSpinner: this.props.loadingSpinner,
     });
   }
 

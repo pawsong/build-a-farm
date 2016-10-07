@@ -47,7 +47,7 @@ Blockly.Blocks['when_run'] = {
   shouldBeGrayedOut: () => false,
 };
 
-Blockly.JavaScript['when_run'] = () => '\n';
+Blockly.JavaScript['when_run'] = () => '';
 
 
 /**
@@ -126,7 +126,7 @@ Blockly.JavaScript['moveTo'] = block => {
   const position: string = Blockly.JavaScript.valueToCode(block, 'POSITION', Blockly.JavaScript.ORDER_NONE);
   if (!position) return '';
 
-  return `await moveTo(${position});\n`;
+  return `moveTo(${position});\n`;
 };
 
 /**
@@ -153,7 +153,7 @@ Blockly.Blocks['nearestVoxel'] = {
 
 Blockly.JavaScript['nearestVoxel'] = block => {
   const blockType = block.getFieldValue('BLOCK_TYPE');
-  return [`await getNearestVoxels([${blockType}])`, Blockly.JavaScript.ORDER_NONE];
+  return [`getNearestVoxels([${blockType}])`, Blockly.JavaScript.ORDER_NONE];
 };
 
 /**
@@ -166,14 +166,18 @@ Blockly.Blocks['use'] = {
     this.setNextStatement(true);
     this.setInputsInline(false);
 
-    this.appendDummyInput().appendField('use');
+    this.appendValueInput('POSITION')
+        .appendField('use');
 
     this.setTooltip('use');
   }
 };
 
 Blockly.JavaScript['use'] = block => {
-  return `await use();\n`;
+  const position: string = Blockly.JavaScript.valueToCode(block, 'POSITION', Blockly.JavaScript.ORDER_NONE);
+  if (!position) return '';
+
+  return `use(${position});\n`;
 };
 
 /**
@@ -193,7 +197,7 @@ Blockly.Blocks['jump'] = {
 };
 
 Blockly.JavaScript['jump'] = block => {
-  return `await jump();\n`;
+  return `jump();\n`;
 };
 
 Blockly.Blocks['controls_forever'] = {
