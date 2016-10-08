@@ -38,32 +38,24 @@ class Notification extends React.Component<{}, NotificationState> {
     this.runThread();
   }
 
-  private runThread() {
+  private async runThread() {
     if (this.threadIsRunning) return;
 
     const query = this.queue.shift();
     if (!query) return;
 
     this.threadIsRunning = true;
-    return this.processQuery(query).then(() => {
-      this.threadIsRunning = false;
-      this.runThread();
-    });
+    await this.processQuery(query);
+    this.threadIsRunning = false;
+
+    this.runThread();
   }
 
-  private processQuery(query: NotificationQuery) {
-    return Promise.resolve()
-      .then(() => {
-        this.setState({
-          query,
-          animation: styles.slideInDown,
-        });
-        return waitFor(3000);
-      })
-      .then(() => {
-        this.setState({ animation: styles.slideOutUp });
-        return waitFor(500);
-      });
+  private async processQuery(query: NotificationQuery) {
+    this.setState({ query, animation: styles.slideInDown });
+    await waitFor(3000);
+    this.setState({ animation: styles.slideOutUp });
+    await waitFor(500);
   }
 
   render() {
