@@ -9,6 +9,7 @@ import CodeEditor from '../CodeEditor';
 import StatusPanel from '../StatusPanel';
 import Notification from '../Notification';
 import Dialogue from '../Dialogue';
+import Tip from '../Tip';
 
 import VirtualMachine from '../../vm/VirtualMachine';
 
@@ -45,6 +46,8 @@ class Root extends React.Component<RootProps, void> {
       vm: this.vm,
       overlay: this.props.overlay,
       loadingSpinner: this.props.loadingSpinner,
+    }).catch(err => {
+      console.error(err);
     });
   }
 
@@ -56,6 +59,7 @@ class Root extends React.Component<RootProps, void> {
         <StatusPanel ref="statusPanel" />
         <CodeEditor ref="codeEditor" vm={this.vm} />
         <Dialogue ref="dialogue" />
+        <Tip />
       </div>
     );
   }

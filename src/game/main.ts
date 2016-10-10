@@ -99,56 +99,50 @@ stats.dom.style.top = 'inherit';
 stats.dom.style.bottom = '0';
 document.body.appendChild(stats.dom);
 
-function fetchObjectModel(url) {
-  return axios.get(url, { responseType: 'arraybuffer' })
-    .then(response => {
-      const decoded = msgpack.decode(new Uint8Array(response.data as ArrayBuffer));
-      const palette = new Uint32Array(decoded.palette);
-      const inflated = pako.inflate(new Uint8Array(decoded.buffer));
-      const matrix = ndarray(new Uint16Array(inflated.buffer), decoded.shape, decoded.stride, decoded.offset);
-      return { matrix, palette };
-    });
+async function fetchObjectModel(url) {
+  const response = await axios.get(url, { responseType: 'arraybuffer' });
+  const decoded = msgpack.decode(new Uint8Array(response.data as ArrayBuffer));
+  const palette = new Uint32Array(decoded.palette);
+  const inflated = pako.inflate(new Uint8Array(decoded.buffer));
+  const matrix = ndarray(new Uint16Array(inflated.buffer), decoded.shape, decoded.stride, decoded.offset);
+  return { matrix, palette };
 }
 
-function fetchChunks(url) {
-  return axios.get(url, { responseType: 'arraybuffer' })
-    .then(response => {
-      const decoded = msgpack.decode(new Uint8Array(response.data as ArrayBuffer));
+async function fetchChunks(url) {
+  const response = await axios.get(url, { responseType: 'arraybuffer' });
+  const decoded = msgpack.decode(new Uint8Array(response.data as ArrayBuffer));
 
-      return decoded.map(item => {
-        const matrix = ndarray(new Uint16Array(CHUNK_ARRAY_SIZE), CHUNK_SHAPE);
+  return decoded.map(item => {
+    const matrix = ndarray(new Uint16Array(CHUNK_ARRAY_SIZE), CHUNK_SHAPE);
 
-        const inflated = pako.inflate(new Uint8Array(item.buffer));
+    const inflated = pako.inflate(new Uint8Array(item.buffer));
 
-        const src = ndarray(new Uint16Array(inflated.buffer), item.shape, item.stride, item.offset);
-        const dest = matrix
-          .lo(CHUNK_PAD_HALF, CHUNK_PAD_HALF, CHUNK_PAD_HALF)
-          .hi(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+    const src = ndarray(new Uint16Array(inflated.buffer), item.shape, item.stride, item.offset);
+    const dest = matrix
+      .lo(CHUNK_PAD_HALF, CHUNK_PAD_HALF, CHUNK_PAD_HALF)
+      .hi(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 
-        ops.assign(dest, src);
+    ops.assign(dest, src);
 
-        return {
-          position: item.position,
-          matrix,
-        }
-      });
-    });
+    return {
+      position: item.position,
+      matrix,
+    }
+  });
 }
 
-function fetchTexturePack(url) {
-  return axios.get(url, { responseType: 'arraybuffer' })
-    .then(response => {
-      const zip = new JSZip();
-      return zip.loadAsync(response.data);
-    })
-    .then(zip => {
-      const promises = [];
-      const files = {};
-      zip.forEach((relativePath, file) => {
-        promises.push(file.async('arraybuffer').then(data => files[relativePath] = data));
-      });
-      return Promise.all(promises).then(() => files);
-    });
+async function fetchTexturePack(url) {
+  const response = await axios.get(url, { responseType: 'arraybuffer' });
+  const zip = new JSZip();
+  await zip.loadAsync(response.data);
+
+  const promises = [];
+  const files = {};
+  zip.forEach((relativePath, file) => {
+    promises.push(file.async('arraybuffer').then(data => files[relativePath] = data));
+  });
+  await Promise.all(promises);
+  return files;
 }
 
 function fetchNonBlockTexture(url: string) {
@@ -196,7 +190,7 @@ interface MainOptions {
   loadingSpinner: LoadingSpinner;
 }
 
-function main ({
+async function main ({
   container,
   codeEditor,
   statusPanel,
@@ -208,7 +202,19 @@ function main ({
 }: MainOptions) {
   const tipBalloon = new TipBalloon();
 
-  Promise.all([
+  const [
+    shell,
+    chunks,
+    {matrix, palette},
+    helperModelData,
+    waterDropData,
+    pack,
+    iconExclamationMarkImage,
+    iconQuestionMarkImage,
+    iconWheatPlusOne1Image,
+    iconWheatPlusOne2Image,
+    iconWheatPlusOne3Image,
+  ] = <any> await Promise.all([
     Game.initShell(),
     fetchChunks(map),
     fetchObjectModel(hero),
@@ -220,332 +226,325 @@ function main ({
     fetchNonBlockTexture(iconWheatPlusOne1Url),
     fetchNonBlockTexture(iconWheatPlusOne2Url),
     fetchNonBlockTexture(iconWheatPlusOne3Url),
-  ]).then(result => {
-    const [
-      shell,
-      chunks,
-      {matrix, palette},
-      helperModelData,
-      waterDropData,
-      pack,
-      iconExclamationMarkImage,
-      iconQuestionMarkImage,
-      iconWheatPlusOne1Image,
-      iconWheatPlusOne2Image,
-      iconWheatPlusOne3Image,
-    ] = <any> result;
+  ]);
 
-    shell.on('gl-render', () => stats.update());
+  shell.on('gl-render', () => stats.update());
 
-    const cache = new Map();
+  const cache = new Map();
 
-    chunks.forEach(chunk => {
-      const { matrix, position } = chunk;
-      matrix.position = position;
+  chunks.forEach(chunk => {
+    const { matrix, position } = chunk;
+    matrix.position = position;
 
-      const key = position.join('|');
-      cache.set(key, chunk.matrix);
-    });
-
-    const game = new Game(shell, {
-      artpacks: [pack],
-      blocks: BLOCKS,
-      fpsControlOptions: {
-        discreteFire: false,
-        fireRate: 100, // ms between firing
-        jumpTimer: 25,
-        walkMaxSpeed: Number(0.0056) * 2,
-      },
-      pluginOpts: {
-        'voxel-engine-stackgl': {
-          generateChunks: false,
-        },
-      },
-    });
-
-    const cubieModel = game.addModel('cubie', matrix, palette);
-    const helperModel = game.addModel('helper', helperModelData.matrix, helperModelData.palette);
-    const waterDropModel = game.addModel('waterdrop', waterDropData.matrix, waterDropData.palette);
-
-    const mapService = new MapService(game, chunks);
-
-    game.stitcher.once('addedAll', () => {
-      game.stitcher.addNonBlockTexture('icon_exclamation_mark', iconExclamationMarkImage);
-      game.stitcher.addNonBlockTexture('icon_question_mark', iconQuestionMarkImage);
-      game.stitcher.addNonBlockTexture('icon_wheat_plus_one_1', iconWheatPlusOne1Image);
-      game.stitcher.addNonBlockTexture('icon_wheat_plus_one_2', iconWheatPlusOne2Image);
-      game.stitcher.addNonBlockTexture('icon_wheat_plus_one_3', iconWheatPlusOne3Image);
-
-      game.stitcher.updateTextureSideID();
-
-      const sprite = game.sprites.register('icon_exclamation_mark', [1, 1], ['icon_exclamation_mark']);
-      const sprite2 = game.sprites.register('wheat_plus_one', [3, 1], [
-        'icon_wheat_plus_one_1',
-        'icon_wheat_plus_one_2',
-        'icon_wheat_plus_one_3',
-      ], 0.5);
-
-      const waterdrop = game.addItem('waterdrop', waterDropModel);
-
-      const myAchievements = new Set<string>();
-      function giveAchievement(id: string) {
-        if (myAchievements.has(id)) return;
-
-        const achievment = achievements[id];
-        if (!achievment) return;
-
-        myAchievements.add(id);
-        notification.show(achievment);
-      }
-
-      function handleUseVoxel(gameObject: GameObject, position: vec3) {
-        const [x, y, z] = position;
-        const voxelId = game.getVoxel(x, y, z);
-
-        switch(voxelId) {
-          case 6: {
-            gameObject.holdItem(waterdrop);
-            giveAchievement('GET_WATER');
-            gameObject.emit('getitem', voxelId);
-            break;
-          }
-          case 7: {
-            if (gameObject.item === waterdrop) {
-              giveAchievement('GROW_A_SPROUT');
-              mapService.setBlock(x, y + 1, z, 9);
-              gameObject.throwItem();
-            }
-            break;
-          }
-          case 9: {
-            if (gameObject.item === waterdrop) {
-              mapService.setBlock(x, y, z, 11);
-              gameObject.throwItem();
-            }
-            break;
-          }
-          case 11: {
-            if (gameObject.item === waterdrop) {
-              mapService.setBlock(x, y, z, 13);
-              gameObject.throwItem();
-            }
-            break;
-          }
-          case 13: {
-            if (gameObject.item === waterdrop) {
-              mapService.setBlock(x, y, z, 15);
-              gameObject.throwItem();
-            }
-            break;
-          }
-          case 15: {
-            mapService.setBlock(x, y, z, 0);
-            game.effectManager.add(x + 0.5, y + 0.5 + 0.5, z + 0.5, sprite2);
-
-            giveAchievement('HARVEST_WHEAT');
-
-            cropCount = cropCount + 1;
-            statusPanel.setCropCount(cropCount);
-
-            gameObject.emit('getitem', voxelId);
-            break;
-          }
-        }
-
-        gameObject.emit('voxelused', voxelId, position);
-      }
-
-      const player = new Character('player', cubieModel, {
-        name: 'Player',
-      });
-      player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      player.setPosition(35, 2, 61);
-      // player.setPosition(0, 4, 0);
-      player.lookAt(vec3.set(v0, 34, 2, 61));
-      game.addObject(player);
-
-      player.on('message', (speaker, message, callback) => {
-        dialogue.showMessage(speaker.name, message).then(() => callback());
-      });
-
-      const helper = new Character('helper', helperModel, {
-        name: 'Neko',
-      });
-      helper.setBehavior(new HelperBehavior(helper, player, mapService));
-
-      helper.setPosition(20, 2, 38);
-      helper.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      // helper.lookAt(vec3.fromValues(8, 2, 33));
-      helper.addSprite(sprite);
-      // helper.on('appear', () => console.log('good!'));
-      game.addObject(helper);
-
-      const a = new Character('a', cubieModel, {
-        name: 'Cubie A',
-      });
-      a.setBehavior(new WorkerBehavior(a, player, codeEditor, overlay, tipBalloon));
-      a.setPosition(7, 2, 33);
-      a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      a.lookAt(vec3.fromValues(8, 2, 33));
-      game.addObject(a);
-
-      const b = new Character('b', cubieModel, {
-        name: 'Cubie B',
-      });
-      b.setBehavior(new WorkerBehavior(b, player, codeEditor, overlay, tipBalloon));
-      b.setPosition(9, 7, 30);
-      b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      b.lookAt(vec3.fromValues(10, 7, 30));
-      game.addObject(b);
-
-      const c = new Character('c', cubieModel, {
-        name: 'Cubie C',
-      });
-      c.setBehavior(new WorkerBehavior(c, player, codeEditor, overlay, tipBalloon));
-      c.setPosition(11, 4, 36);
-      c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-      c.lookAt(vec3.fromValues(12, 4, 36));
-      game.addObject(c);
-
-      const blocks = [
-        game.registry.getBlockIndex(1),
-        game.registry.getBlockIndex(2),
-        game.registry.getBlockIndex(3),
-        game.registry.getBlockIndex(4),
-        game.registry.getBlockIndex(5),
-        game.registry.getBlockIndex(6),
-      ];
-
-      let idx = 0;
-
-      // Draw terrain
-
-      function isChunkAvailable(position) {
-        return position[1] === -1 || position[1] === 0;
-      }
-
-      function getChunk(position) {
-        const blockIndex = blocks[ 5 ];
-
-        const width = game.chunkSize;
-        const pad = game.chunkPad;
-        const arrayType = game.arrayType;
-
-        const buffer = new ArrayBuffer((width+pad) * (width+pad) * (width+pad) * arrayType.BYTES_PER_ELEMENT);
-        const voxelsPadded = ndarray(new arrayType(buffer), [width+pad, width+pad, width+pad]);
-        const h = pad >> 1;
-        const voxels = voxelsPadded.lo(h,h,h).hi(width,width,width);
-
-        if (position[1] !== 0) {
-          for (let x = 0; x < game.chunkSize; ++x) {
-            for (let z = 0; z < game.chunkSize; ++z) {
-              for (let y = 0; y < game.chunkSize; ++y) {
-                voxels.set(x, y, z, blockIndex);
-              }
-            }
-          }
-        }
-
-        const chunk = voxelsPadded;
-        chunk['position'] = position;
-
-        return chunk;
-      }
-
-      function getCachedChunk(position) {
-        const key = position.join('|');
-
-        const cached = cache.get(key);
-        if (cached) return cached;
-
-        const chunk = getChunk(position);
-        cache.set(key, chunk);
-        return chunk;
-      }
-
-      cache.forEach(chunk => game.showChunk(chunk));
-
-      game.voxels.on('missingChunk', position => {
-        if (!isChunkAvailable(position)) return;
-        game.showChunk(getCachedChunk(position));
-      });
-
-      vm.on('stop', thread => {
-        const object = game.getObject(thread.objectId);
-        object.stop(false);
-      });
-
-      vm.on('api', async (child, params) => {
-        const object = game.getObject(params.objectId);
-
-        switch(params.api) {
-          case 'getNearestVoxels': {
-            const vids = params.body;
-            const { position } = object;
-
-            const result = mapService.searchForNearestVoxel(position, vids);
-            if (!result) break;
-
-            const [voxelId, p0, p1] = result;
-            child.sendResponse(params.objectId, params.requestId, [
-              p0, [8, 9, 10, 11, 12, 13, 14, 15].indexOf(voxelId) === -1 ? 0 : 1, p1,
-            ]);
-            break;
-          }
-          case 'use': {
-            const target = params.body;
-            const { position } = object;
-            const path = mapService.findPath(position, target);
-
-            await object.move(path);
-
-            handleUseVoxel(object, target);
-
-            child.sendResponse(params.objectId, params.requestId);
-            break;
-          }
-          case 'jump': {
-            const { position } = object;
-            await object.jump();
-            child.sendResponse(params.objectId, params.requestId);
-          }
-        }
-      });
-
-      // Rendering
-
-      const fsm = new ModeFsm();
-      const fpsMode = new FpsMode(fsm, game, player);
-      const topDownMode = new TopDownMode(fsm, game, codeEditor);
-
-      fpsMode.on('enter', () => {
-        statusPanel.show();
-      });
-
-      fpsMode.on('leave', () => {
-        statusPanel.hide();
-      });
-
-      fsm.init({
-        fpsMode,
-        transitionMode: new TransitionMode(fsm, game, codeEditor),
-        topDownMode,
-        toFpsMode: new ToFpsMode(fsm, game, codeEditor),
-      }, fpsMode);
-
-      shell.on('gl-resize', () => fsm.current.onResize());
-      shell.on('gl-render', () => fsm.current.onRender());
-      game.on('tick', dt => {
-        fsm.current.onTick(dt);
-      });
-      player.on('usevoxel', (position: vec3) => handleUseVoxel(player, position));
-
-      overlay.hide();
-      loadingSpinner.hide();
-    });
-  }).catch(err => {
-    console.error(err);
+    const key = position.join('|');
+    cache.set(key, chunk.matrix);
   });
+
+  const game = new Game(shell, {
+    artpacks: [pack],
+    blocks: BLOCKS,
+    fpsControlOptions: {
+      discreteFire: false,
+      fireRate: 100, // ms between firing
+      jumpTimer: 25,
+      walkMaxSpeed: Number(0.0056) * 2,
+    },
+    pluginOpts: {
+      'voxel-engine-stackgl': {
+        generateChunks: false,
+      },
+    },
+  });
+
+  await new Promise(resolve => game.stitcher.once('addedAll', resolve));
+
+  const cubieModel = game.addModel('cubie', matrix, palette);
+  const helperModel = game.addModel('helper', helperModelData.matrix, helperModelData.palette);
+  const waterDropModel = game.addModel('waterdrop', waterDropData.matrix, waterDropData.palette);
+
+  const mapService = new MapService(game, chunks);
+
+  game.stitcher.addNonBlockTexture('icon_exclamation_mark', iconExclamationMarkImage);
+  game.stitcher.addNonBlockTexture('icon_question_mark', iconQuestionMarkImage);
+  game.stitcher.addNonBlockTexture('icon_wheat_plus_one_1', iconWheatPlusOne1Image);
+  game.stitcher.addNonBlockTexture('icon_wheat_plus_one_2', iconWheatPlusOne2Image);
+  game.stitcher.addNonBlockTexture('icon_wheat_plus_one_3', iconWheatPlusOne3Image);
+
+  game.stitcher.updateTextureSideID();
+
+  const sprite = game.sprites.register('icon_exclamation_mark', [1, 1], ['icon_exclamation_mark']);
+  const sprite2 = game.sprites.register('wheat_plus_one', [3, 1], [
+    'icon_wheat_plus_one_1',
+    'icon_wheat_plus_one_2',
+    'icon_wheat_plus_one_3',
+  ], 0.5);
+
+  const waterdrop = game.addItem('waterdrop', waterDropModel);
+
+  const myAchievements = new Set<string>();
+  function giveAchievement(id: string) {
+    if (myAchievements.has(id)) return;
+
+    const achievment = achievements[id];
+    if (!achievment) return;
+
+    myAchievements.add(id);
+    notification.show(achievment);
+  }
+
+  function handleUseVoxel(gameObject: GameObject, position: vec3) {
+    const [x, y, z] = position;
+    const voxelId = game.getVoxel(x, y, z);
+
+    switch(voxelId) {
+      case 6: {
+        gameObject.holdItem(waterdrop);
+        giveAchievement('GET_WATER');
+        gameObject.emit('getitem', voxelId);
+        break;
+      }
+      case 7: {
+        if (gameObject.item === waterdrop) {
+          giveAchievement('GROW_A_SPROUT');
+          mapService.setBlock(x, y + 1, z, 9);
+          gameObject.throwItem();
+        }
+        break;
+      }
+      case 9: {
+        if (gameObject.item === waterdrop) {
+          mapService.setBlock(x, y, z, 11);
+          gameObject.throwItem();
+        }
+        break;
+      }
+      case 11: {
+        if (gameObject.item === waterdrop) {
+          mapService.setBlock(x, y, z, 13);
+          gameObject.throwItem();
+        }
+        break;
+      }
+      case 13: {
+        if (gameObject.item === waterdrop) {
+          mapService.setBlock(x, y, z, 15);
+          gameObject.throwItem();
+        }
+        break;
+      }
+      case 15: {
+        mapService.setBlock(x, y, z, 0);
+        game.effectManager.add(x + 0.5, y + 0.5 + 0.5, z + 0.5, sprite2);
+
+        giveAchievement('HARVEST_WHEAT');
+
+        cropCount = cropCount + 1;
+        statusPanel.setCropCount(cropCount);
+
+        gameObject.emit('getitem', voxelId);
+        break;
+      }
+    }
+
+    gameObject.emit('voxelused', voxelId, position);
+  }
+
+  const player = new Character('player', cubieModel, {
+    name: 'Player',
+  });
+  player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+  player.setPosition(35, 2, 61);
+  // player.setPosition(0, 4, 0);
+  player.lookAt(vec3.set(v0, 34, 2, 61));
+  game.addObject(player);
+
+  player.on('message', (speaker, message, callback) => {
+    dialogue.showMessage(speaker.name, message).then(() => callback());
+  });
+
+  const helper = new Character('helper', helperModel, {
+    name: 'Neko',
+  });
+  helper.setBehavior(new HelperBehavior(helper, player, mapService));
+
+  helper.setPosition(20, 2, 38);
+  helper.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+  // helper.lookAt(vec3.fromValues(8, 2, 33));
+  helper.addSprite(sprite);
+  // helper.on('appear', () => console.log('good!'));
+  game.addObject(helper);
+
+  const a = new Character('a', cubieModel, {
+    name: 'Cubie A',
+  });
+  a.setBehavior(new WorkerBehavior(a, player, codeEditor, overlay, tipBalloon));
+  a.setPosition(7, 2, 33);
+  a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+  a.lookAt(vec3.fromValues(8, 2, 33));
+  game.addObject(a);
+
+  const b = new Character('b', cubieModel, {
+    name: 'Cubie B',
+  });
+  b.setBehavior(new WorkerBehavior(b, player, codeEditor, overlay, tipBalloon));
+  b.setPosition(9, 7, 30);
+  b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+  b.lookAt(vec3.fromValues(10, 7, 30));
+  game.addObject(b);
+
+  const c = new Character('c', cubieModel, {
+    name: 'Cubie C',
+  });
+  c.setBehavior(new WorkerBehavior(c, player, codeEditor, overlay, tipBalloon));
+  c.setPosition(11, 4, 36);
+  c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
+  c.lookAt(vec3.fromValues(12, 4, 36));
+  game.addObject(c);
+
+  const blocks = [
+    game.registry.getBlockIndex(1),
+    game.registry.getBlockIndex(2),
+    game.registry.getBlockIndex(3),
+    game.registry.getBlockIndex(4),
+    game.registry.getBlockIndex(5),
+    game.registry.getBlockIndex(6),
+  ];
+
+  let idx = 0;
+
+  // Draw terrain
+
+  function isChunkAvailable(position) {
+    return position[1] === -1 || position[1] === 0;
+  }
+
+  function getChunk(position) {
+    const blockIndex = blocks[ 5 ];
+
+    const width = game.chunkSize;
+    const pad = game.chunkPad;
+    const arrayType = game.arrayType;
+
+    const buffer = new ArrayBuffer((width+pad) * (width+pad) * (width+pad) * arrayType.BYTES_PER_ELEMENT);
+    const voxelsPadded = ndarray(new arrayType(buffer), [width+pad, width+pad, width+pad]);
+    const h = pad >> 1;
+    const voxels = voxelsPadded.lo(h,h,h).hi(width,width,width);
+
+    if (position[1] !== 0) {
+      for (let x = 0; x < game.chunkSize; ++x) {
+        for (let z = 0; z < game.chunkSize; ++z) {
+          for (let y = 0; y < game.chunkSize; ++y) {
+            voxels.set(x, y, z, blockIndex);
+          }
+        }
+      }
+    }
+
+    const chunk = voxelsPadded;
+    chunk['position'] = position;
+
+    return chunk;
+  }
+
+  function getCachedChunk(position) {
+    const key = position.join('|');
+
+    const cached = cache.get(key);
+    if (cached) return cached;
+
+    const chunk = getChunk(position);
+    cache.set(key, chunk);
+    return chunk;
+  }
+
+  cache.forEach(chunk => game.showChunk(chunk));
+
+  game.voxels.on('missingChunk', position => {
+    if (!isChunkAvailable(position)) return;
+    game.showChunk(getCachedChunk(position));
+  });
+
+  vm.on('stop', thread => {
+    const object = game.getObject(thread.objectId);
+    object.stop(false);
+  });
+
+  vm.on('api', async (child, params) => {
+    try {
+      const object = game.getObject(params.objectId);
+
+      switch(params.api) {
+        case 'getNearestVoxels': {
+          const vids = params.body;
+          const { position } = object;
+
+          const result = mapService.searchForNearestVoxel(position, vids);
+          if (!result) break;
+
+          const [voxelId, p0, p1] = result;
+          child.sendResponse(params.objectId, params.requestId, [
+            p0, [8, 9, 10, 11, 12, 13, 14, 15].indexOf(voxelId) === -1 ? 0 : 1, p1,
+          ]);
+          break;
+        }
+        case 'use': {
+          const target = params.body;
+          const { position } = object;
+          const path = mapService.findPath(position, target);
+
+          await object.move(path);
+
+          handleUseVoxel(object, target);
+
+          child.sendResponse(params.objectId, params.requestId);
+          break;
+        }
+        case 'jump': {
+          const { position } = object;
+          await object.jump();
+          child.sendResponse(params.objectId, params.requestId);
+          break;
+        }
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  });
+
+  // Rendering
+
+  const fsm = new ModeFsm();
+  const fpsMode = new FpsMode(fsm, game, player);
+  const topDownMode = new TopDownMode(fsm, game, codeEditor);
+
+  fpsMode.on('enter', () => {
+    statusPanel.show();
+  });
+
+  fpsMode.on('leave', () => {
+    statusPanel.hide();
+  });
+
+  fsm.init({
+    fpsMode,
+    transitionMode: new TransitionMode(fsm, game, codeEditor),
+    topDownMode,
+    toFpsMode: new ToFpsMode(fsm, game, codeEditor),
+  }, fpsMode);
+
+  shell.on('gl-resize', () => fsm.current.onResize());
+  shell.on('gl-render', () => fsm.current.onRender());
+  game.on('tick', dt => {
+    fsm.current.onTick(dt);
+  });
+  player.on('usevoxel', (position: vec3) => handleUseVoxel(player, position));
+
+  overlay.hide();
+  loadingSpinner.hide();
+
+  // App started!
+
+  console.log('start!');
 }
 
 export default main;
