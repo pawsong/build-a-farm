@@ -1,5 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
+import Message from '../Message';
 
 const styles = require('./Notification.css');
 
@@ -62,7 +63,7 @@ class Notification extends React.Component<{}, NotificationState> {
     if (!this.state.query) return null;
 
     return (
-      <div className={classNames(styles.root, this.state.animation)}>
+      <Message className={classNames(styles.root, this.state.animation)}>
         <img className={styles.icon} src={this.state.query.imageUrl} />
         <div>
           <div className={styles.title}>
@@ -72,7 +73,7 @@ class Notification extends React.Component<{}, NotificationState> {
             {this.state.query.message}
           </div>
         </div>
-      </div>
+      </Message>
     );
   }
 }

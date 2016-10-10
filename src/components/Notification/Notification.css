@@ -1,32 +1,21 @@
 .root {
   position: absolute;
-  z-index: 1001;
-  font-family: Minecraftia;
-  font-size: 24px;
-  font-smooth: never;
-  -webkit-font-smoothing: none;
-
-  display: flex;
-  align-items: center;
-  padding: 12px;
-
-  background-color: #607D8B;
-  border: 8px solid #37474F;
-
   animation-duration: 0.5s;
   animation-fill-mode: both;
 }
 
 .icon {
-  margin-right: 12px;
+  margin-right: 20px;
 }
 
 .title {
   color: #FFFF8D;
+  font-size: 20px;
+  margin-bottom: 4px;
 }
 
 .content {
-  color: #ffffff;
+  font-size: 20px;
 }
 
 .slideInDown {
