@@ -46,6 +46,7 @@ import {
   GameObject,
   Camera,
   TopDownCamera,
+  Chunk,
 } from '@buffy/voxel-engine';
 import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
 import TransitionCamera from '@buffy/voxel-engine/lib/cameras/TransitionCamera';
@@ -222,14 +223,14 @@ async function main ({
 
   shell.on('gl-render', () => stats.update());
 
-  const cache = new Map();
+  const cache: Map<string, Chunk> = new Map();
 
   chunks.forEach(chunk => {
     const { matrix, position } = chunk;
     matrix.position = position;
 
     const key = position.join('|');
-    cache.set(key, chunk.matrix);
+    cache.set(key, new Chunk(matrix, position[0], position[1], position[2]));
   });
 
   const game = new Game(shell, {
@@ -432,10 +433,7 @@ async function main ({
       }
     }
 
-    const chunk = voxelsPadded;
-    chunk['position'] = position;
-
-    return chunk;
+    return new Chunk(voxelsPadded, position[0], position[1], position[2]);
   }
 
   function getCachedChunk(position) {
@@ -451,10 +449,10 @@ async function main ({
 
   cache.forEach(chunk => game.showChunk(chunk));
 
-  game.voxels.on('missingChunk', position => {
-    if (!isChunkAvailable(position)) return;
-    game.showChunk(getCachedChunk(position));
-  });
+  // game.voxels.on('missingChunk', position => {
+  //   if (!isChunkAvailable(position)) return;
+  //   game.showChunk(getCachedChunk(position));
+  // });
 
   vm.on('stop', thread => {
     const object = game.getObject(thread.objectId);
