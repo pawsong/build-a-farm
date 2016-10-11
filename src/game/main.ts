@@ -113,20 +113,12 @@ async function fetchChunks(url) {
   const decoded = msgpack.decode(new Uint8Array(response.data as ArrayBuffer));
 
   return decoded.map(item => {
-    const matrix = ndarray(new Uint16Array(CHUNK_ARRAY_SIZE), CHUNK_SHAPE);
-
     const inflated = pako.inflate(new Uint8Array(item.buffer));
-
-    const src = ndarray(new Uint16Array(inflated.buffer), item.shape, item.stride, item.offset);
-    const dest = matrix
-      .lo(CHUNK_PAD_HALF, CHUNK_PAD_HALF, CHUNK_PAD_HALF)
-      .hi(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-
-    ops.assign(dest, src);
+    const matrix = ndarray(new Uint16Array(inflated.buffer), item.shape, item.stride, item.offset);
 
     return {
-      position: item.position,
       matrix,
+      position: item.position,
     }
   });
 }

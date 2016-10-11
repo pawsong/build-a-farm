@@ -11,8 +11,6 @@ import {
 } from './ndops/searchForNearestVoxel';
 
 const CHUNK_SIZE = 32;
-const CHUNK_PAD = 4;
-const CHUNK_PAD_HALF = CHUNK_PAD >> 1;
 
 interface Chunk {
   matrix: Ndarray;
@@ -42,7 +40,6 @@ class MapService {
 
     for (const chunk of chunks) {
       const src = chunk.matrix
-        .lo(CHUNK_PAD_HALF, CHUNK_PAD_HALF, CHUNK_PAD_HALF)
         .hi(CHUNK_SIZE, 1, CHUNK_SIZE);
 
       const dest = this.ground
