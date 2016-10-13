@@ -10,6 +10,12 @@ import createElement from '../../../utils/createElement';
 
 import ModeFsm, { ModeState } from '../ModeFsm';
 
+const createBox = require('geo-3d-box');
+const glShader = require('gl-shader');
+const GLGeometry = require('gl-geometry');
+
+const m0 = mat4.create();
+
 import {
   Game,
   Camera,
@@ -65,6 +71,9 @@ class FpsMode extends ModeState<void> {
   player: Character;
   emitter: EventEmitter;
 
+  box: any;
+  aabbShader: any;
+
   constructor(fsm: ModeFsm, game: Game, player: Character) {
     super(fsm);
 
@@ -108,6 +117,21 @@ class FpsMode extends ModeState<void> {
 
     this.controls = new FpsControl(buttons, shell, fpsControlOptions);
     this.controls.target(player.physics, player, this.camera.camera);
+
+    const box = createBox();
+    for (const position of box.positions) {
+      position[0] += 0.5;
+      position[1] += 0.5;
+      position[2] += 0.5;
+    }
+    this.box = new GLGeometry(this.game.shell.gl)
+      .attr('position', box.positions)
+      .faces(box.cells);
+
+    this.aabbShader = glShader(this.game.shell.gl,
+      require('raw!glslify!../../../shaders/aabb.vert'),
+      require('raw!glslify!../../../shaders/aabb.frag')
+    );
   }
 
   on(type: string, handler: Function) {
@@ -207,6 +231,27 @@ class FpsMode extends ModeState<void> {
     }
 
     this.game.render(this.camera);
+
+    // Draw aabb
+    // TODO: Make this optional
+    const { gl } = this.game.shell;
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    gl.disable(gl.DEPTH_TEST);
+
+    const { viewMatrix, projectionMatrix } = this.camera;
+    this.box.bind(this.aabbShader);
+    this.aabbShader.uniforms.uProjection = projectionMatrix;
+    this.aabbShader.uniforms.uView = viewMatrix;
+
+    for (const object of this.game.objects) {
+      mat4.fromTranslation(m0, object.physics.aabb.base);
+      mat4.scale(m0, m0, object.physics.aabb.vec);
+
+      this.aabbShader.uniforms.uModel = m0;
+      this.box.draw();
+    }
+
+    gl.enable(gl.DEPTH_TEST);
   }
 
   onTick(dt: number) {
