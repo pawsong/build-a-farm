@@ -47,7 +47,7 @@ class Root extends React.Component<RootProps, void> {
       overlay: this.props.overlay,
       loadingSpinner: this.props.loadingSpinner,
     }).catch(err => {
-      console.error(err);
+      console.error(err.stack);
     });
   }
 

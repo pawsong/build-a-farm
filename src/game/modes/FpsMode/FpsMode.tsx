@@ -14,6 +14,7 @@ const createBox = require('geo-3d-box');
 const glShader = require('gl-shader');
 const GLGeometry = require('gl-geometry');
 
+const tv0 = vec3.create();
 const m0 = mat4.create();
 
 import {
@@ -245,7 +246,7 @@ class FpsMode extends ModeState<void> {
 
     for (const object of this.game.objects) {
       mat4.fromTranslation(m0, object.physics.aabb.base);
-      mat4.scale(m0, m0, object.physics.aabb.vec);
+      mat4.scale(m0, m0, object.physics.aabb.size);
 
       this.aabbShader.uniforms.uModel = m0;
       this.box.draw();

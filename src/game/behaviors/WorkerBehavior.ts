@@ -66,6 +66,7 @@ class WorkerBehavior extends BaseBehavior {
       }
       case QuestFarmProgress.WHEAT_FOUND:
       case QuestFarmProgress.ACTION_BUTTON_FOUND:
+      case QuestFarmProgress.READY:
       {
         source.emit('code', this.me);
         break;

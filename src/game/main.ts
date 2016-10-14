@@ -65,6 +65,7 @@ import Dialogue from '../components/Dialogue';
 import HelperBehavior from './behaviors/HelperBehavior';
 import WorkerBehavior from './behaviors/WorkerBehavior';
 import PlayerBehavior from './behaviors/PlayerBehavior';
+import ElevatorBehavior from './behaviors/ElevatorBehavior';
 
 const map: string = require('file!./models/map.msgpack');
 const hero: string = require('file!./models/cube.msgpack');
@@ -223,16 +224,6 @@ async function main ({
 
   shell.on('gl-render', () => stats.update());
 
-  const cache: Map<string, Chunk> = new Map();
-
-  chunks.forEach(chunk => {
-    const { matrix, position } = chunk;
-    matrix.position = position;
-
-    const key = position.join('|');
-    cache.set(key, new Chunk(matrix, position[0], position[1], position[2]));
-  });
-
   const game = new Game(shell, {
     artpacks: [pack],
     blocks: BLOCKS,
@@ -248,8 +239,17 @@ async function main ({
       },
     },
   });
-
   await new Promise(resolve => game.stitcher.once('addedAll', resolve));
+
+  const cache: Map<string, Chunk> = new Map();
+
+  chunks.forEach(chunk => {
+    const { matrix, position } = chunk;
+    matrix.position = position;
+
+    const key = position.join('|');
+    cache.set(key, game.createChunk(matrix, position[0], position[1], position[2]));
+  });
 
   const cubieModel = game.addModel('cubie', matrix, palette);
   const helperModel = game.addModel('helper', helperModelData.matrix, helperModelData.palette);
@@ -264,6 +264,11 @@ async function main ({
   game.stitcher.addNonBlockTexture('icon_wheat_plus_one_3', iconWheatPlusOne3Image);
 
   game.stitcher.updateTextureSideID();
+
+  const elevatorData = ndarray(new Uint16Array(2 * 1 * 2), [2, 1, 2]);
+  ops.assigns(elevatorData, 4);
+
+  const elevatorModel = game.addVoxelModel('elevator', elevatorData);
 
   const sprite = game.sprites.register('icon_exclamation_mark', [1, 1], ['icon_exclamation_mark']);
   const sprite2 = game.sprites.register('wheat_plus_one', [3, 1], [
@@ -346,9 +351,9 @@ async function main ({
     name: 'Player',
   });
   player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-  player.setPosition(35, 2, 61);
+  player.setPosition(35, 2, 68);
   // player.setPosition(0, 4, 0);
-  player.lookAt(vec3.set(v0, 34, 2, 61));
+  player.lookAt(vec3.set(v0, 34, 2, 68));
   game.addObject(player);
 
   player.on('message', (speaker, message, callback) => {
@@ -360,7 +365,7 @@ async function main ({
   });
   helper.setBehavior(new HelperBehavior(helper, player, mapService));
 
-  helper.setPosition(20, 2, 38);
+  helper.setPosition(20, 2, 45);
   helper.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
   // helper.lookAt(vec3.fromValues(8, 2, 33));
   helper.addSprite(sprite);
@@ -371,28 +376,37 @@ async function main ({
     name: 'Cubie A',
   });
   a.setBehavior(new WorkerBehavior(a, player, codeEditor, overlay, tipBalloon));
-  a.setPosition(7, 2, 33);
+  a.setPosition(7, 2, 40);
   a.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-  a.lookAt(vec3.fromValues(8, 2, 33));
+  a.lookAt(vec3.fromValues(8, 2, 40));
   game.addObject(a);
 
   const b = new Character('b', cubieModel, {
     name: 'Cubie B',
   });
   b.setBehavior(new WorkerBehavior(b, player, codeEditor, overlay, tipBalloon));
-  b.setPosition(9, 7, 30);
+  b.setPosition(9, 7, 37);
   b.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-  b.lookAt(vec3.fromValues(10, 7, 30));
+  b.lookAt(vec3.fromValues(10, 7, 37));
   game.addObject(b);
 
   const c = new Character('c', cubieModel, {
     name: 'Cubie C',
   });
   c.setBehavior(new WorkerBehavior(c, player, codeEditor, overlay, tipBalloon));
-  c.setPosition(11, 4, 36);
+  c.setPosition(11, 4, 43);
   c.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
-  c.lookAt(vec3.fromValues(12, 4, 36));
+  c.lookAt(vec3.fromValues(12, 4, 43));
   game.addObject(c);
+
+  const elevator = new Character('elevator', elevatorModel, {
+    name: 'Elevator',
+    mass: Infinity,
+    gravityMultiplier: 0,
+  });
+  elevator.setBehavior(new ElevatorBehavior(elevator));
+  elevator.setPosition(29, 3, 6);
+  game.addObject(elevator);
 
   const blocks = [
     game.registry.getBlockIndex(1),
@@ -433,7 +447,7 @@ async function main ({
       }
     }
 
-    return new Chunk(voxelsPadded, position[0], position[1], position[2]);
+    return game.createChunk(voxelsPadded, position[0], position[1], position[2]);
   }
 
   function getCachedChunk(position) {

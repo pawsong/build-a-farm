@@ -5,4 +5,5 @@ export enum QuestFarmProgress {
   SPROUT_FOUND = 2,
   WHEAT_FOUND = 3,
   ACTION_BUTTON_FOUND = 4,
+  READY = 5,
 }

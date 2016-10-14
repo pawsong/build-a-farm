@@ -10,6 +10,8 @@ import Behavior from './behaviors/Behavior';
 
 interface CharacterOptions {
   name: string;
+  mass?: number;
+  gravityMultiplier?: number;
 }
 
 export const fpsControlOptions: FpsControlOptions = {
@@ -30,7 +32,11 @@ class Character extends GameObject {
   propsN: Map<string, number>;
 
   constructor(id: string, model: Model, options: CharacterOptions) {
-    super(id, model, fpsControlOptions);
+    super(id, model, {
+      control: fpsControlOptions,
+      mass: options.mass,
+      gravityMultiplier: options.gravityMultiplier,
+    });
     this.name = options.name;
 
     this.propsB = new Map();
