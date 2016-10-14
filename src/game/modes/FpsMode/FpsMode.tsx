@@ -74,6 +74,7 @@ class FpsMode extends ModeState<void> {
 
   box: any;
   aabbShader: any;
+  showAABB: boolean;
 
   constructor(fsm: ModeFsm, game: Game, player: Character) {
     super(fsm);
@@ -133,6 +134,8 @@ class FpsMode extends ModeState<void> {
       require('raw!glslify!../../../shaders/aabb.vert'),
       require('raw!glslify!../../../shaders/aabb.frag')
     );
+
+    this.showAABB = true;
   }
 
   on(type: string, handler: Function) {
@@ -234,25 +237,26 @@ class FpsMode extends ModeState<void> {
     this.game.render(this.camera);
 
     // Draw aabb
-    // TODO: Make this optional
-    const { gl } = this.game.shell;
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-    gl.disable(gl.DEPTH_TEST);
+    if (this.showAABB) {
+      const { gl } = this.game.shell;
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.disable(gl.DEPTH_TEST);
 
-    const { viewMatrix, projectionMatrix } = this.camera;
-    this.box.bind(this.aabbShader);
-    this.aabbShader.uniforms.uProjection = projectionMatrix;
-    this.aabbShader.uniforms.uView = viewMatrix;
+      const { viewMatrix, projectionMatrix } = this.camera;
+      this.box.bind(this.aabbShader);
+      this.aabbShader.uniforms.uProjection = projectionMatrix;
+      this.aabbShader.uniforms.uView = viewMatrix;
 
-    for (const object of this.game.objects) {
-      mat4.fromTranslation(m0, object.physics.aabb.base);
-      mat4.scale(m0, m0, object.physics.aabb.size);
+      for (const object of this.game.objects) {
+        mat4.fromTranslation(m0, object.physics.aabb.base);
+        mat4.scale(m0, m0, object.physics.aabb.size);
 
-      this.aabbShader.uniforms.uModel = m0;
-      this.box.draw();
+        this.aabbShader.uniforms.uModel = m0;
+        this.box.draw();
+      }
+
+      gl.enable(gl.DEPTH_TEST);
     }
-
-    gl.enable(gl.DEPTH_TEST);
   }
 
   onTick(dt: number) {

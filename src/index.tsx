@@ -6,6 +6,7 @@ require('react-tap-event-plugin')();
 import Overlay from './ui/Overlay';
 import LoadingSpinner from './ui/LoadingSpinner';
 import './index.css';
+import './index.dev.css';
 import Root from './components/Root';
 
 const overlay = new Overlay();

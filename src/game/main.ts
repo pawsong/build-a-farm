@@ -1,6 +1,7 @@
 import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import mat4 from 'gl-matrix/src/gl-matrix/mat4';
 import JSZip from 'jszip';
+import dat from 'dat.gui/build/dat.gui.js';
 
 import ModeFsm from './modes/ModeFsm';
 import FpsMode from './modes/FpsMode';
@@ -549,6 +550,9 @@ async function main ({
   // App started!
 
   console.log('start!');
+
+  const gui = new dat.GUI();
+  gui.add(fpsMode, 'showAABB');
 }
 
 export default main;
