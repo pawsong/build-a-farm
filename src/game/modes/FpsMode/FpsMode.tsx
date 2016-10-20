@@ -72,9 +72,13 @@ class FpsMode extends ModeState<void> {
   player: Character;
   emitter: EventEmitter;
 
+  showAABB: boolean;
   box: any;
   aabbShader: any;
-  showAABB: boolean;
+
+  showChunkBounds: boolean;
+  boxEdge: any;
+  chunkBoundsShader: any;
 
   constructor(fsm: ModeFsm, game: Game, player: Character) {
     super(fsm);
@@ -120,6 +124,7 @@ class FpsMode extends ModeState<void> {
     this.controls = new FpsControl(buttons, shell, fpsControlOptions);
     this.controls.target(player.physics, player, this.camera.camera);
 
+    this.showAABB = true;
     const box = createBox();
     for (const position of box.positions) {
       position[0] += 0.5;
@@ -135,7 +140,30 @@ class FpsMode extends ModeState<void> {
       require('raw!glslify!../../../shaders/aabb.frag')
     );
 
-    this.showAABB = true;
+    this.showChunkBounds = true;
+    const boxEdge = createBox({ size: game.chunkSize });
+    for (const position of boxEdge.positions) {
+      position[0] += 0.5 * game.chunkSize;
+      position[1] += 0.5 * game.chunkSize;
+      position[2] += 0.5 * game.chunkSize;
+    }
+
+    // Flip
+    for (const cell of boxEdge.cells) {
+      const tmp = cell[0];
+      cell[0] = cell[1];
+      cell[1] = tmp;
+    }
+
+    this.boxEdge = new GLGeometry(this.game.shell.gl)
+      .attr('position', boxEdge.positions)
+      .attr('uv', boxEdge.uvs, { size: 2 })
+      .faces(boxEdge.cells);
+
+    this.chunkBoundsShader = glShader(this.game.shell.gl,
+      require('raw!glslify!../../../shaders/chunk.vert'),
+      require('raw!glslify!../../../shaders/chunk.frag')
+    );
   }
 
   on(type: string, handler: Function) {
@@ -239,10 +267,11 @@ class FpsMode extends ModeState<void> {
     // Draw aabb
     if (this.showAABB) {
       const { gl } = this.game.shell;
+      const { viewMatrix, projectionMatrix } = this.camera;
+
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
       gl.disable(gl.DEPTH_TEST);
 
-      const { viewMatrix, projectionMatrix } = this.camera;
       this.box.bind(this.aabbShader);
       this.aabbShader.uniforms.uProjection = projectionMatrix;
       this.aabbShader.uniforms.uView = viewMatrix;
@@ -256,6 +285,32 @@ class FpsMode extends ModeState<void> {
       }
 
       gl.enable(gl.DEPTH_TEST);
+    }
+
+    if (this.showChunkBounds) {
+      const { gl } = this.game.shell;
+      const { viewMatrix, projectionMatrix } = this.camera;
+
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
+      gl.enable(gl.POLYGON_OFFSET_FILL);
+      gl.polygonOffset(-1, 2);
+
+      this.boxEdge.bind(this.chunkBoundsShader);
+      this.chunkBoundsShader.uniforms.uProjection = projectionMatrix;
+      this.chunkBoundsShader.uniforms.uView = viewMatrix;
+
+      const { chunks } = this.game.voxels;
+      const keys = Object.keys(chunks);
+
+      for (let k = 0, len = keys.length; k < len; ++k) {
+        const chunkIndex = keys[k];
+        const chunk = chunks[chunkIndex];
+        this.chunkBoundsShader.uniforms.uModel = chunk.modelMatrix;
+        this.boxEdge.draw();
+      }
+
+      gl.disable(gl.POLYGON_OFFSET_FILL);
     }
   }
 
