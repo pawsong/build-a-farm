@@ -73,6 +73,8 @@ const hero: string = require('file!./models/cube.msgpack');
 const helperModelUrl: string = require('file!./models/helper.msgpack');
 const drop: string = require('file!./models/drop.msgpack');
 const sprout: string = require('file!./models/sprout.msgpack');
+const hooman: string = require('file!./models/hooman.msgpack');
+const chick: string = require('file!./models/chick.msgpack');
 
 const resourceUrl = require('file!./textures/GoodMorningCraftv4.95.zip');
 const iconExclamationMarkUrl = require('./textures/icon_exclamation_mark.png');
@@ -203,6 +205,8 @@ async function main ({
     {matrix, palette},
     helperModelData,
     waterDropData,
+    hoomanData,
+    chickData,
     pack,
     iconExclamationMarkImage,
     iconQuestionMarkImage,
@@ -215,6 +219,8 @@ async function main ({
     fetchObjectModel(hero),
     fetchObjectModel(helperModelUrl),
     fetchObjectModel(drop),
+    fetchObjectModel(hooman),
+    fetchObjectModel(chick),
     fetchTexturePack(resourceUrl),
     fetchNonBlockTexture(iconExclamationMarkUrl),
     fetchNonBlockTexture(iconQuestionMarkUrl),
@@ -255,6 +261,8 @@ async function main ({
   const cubieModel = game.addModel('cubie', matrix, palette);
   const helperModel = game.addModel('helper', helperModelData.matrix, helperModelData.palette);
   const waterDropModel = game.addModel('waterdrop', waterDropData.matrix, waterDropData.palette);
+  const hoomanModel = game.addModel('hooman', hoomanData.matrix, hoomanData.palette);
+  const chickModel = game.addModel('chick', chickData.matrix, chickData.palette);
 
   const mapService = new MapService(game, chunks);
 
@@ -373,7 +381,7 @@ async function main ({
   // helper.on('appear', () => console.log('good!'));
   game.addObject(helper);
 
-  const a = new Character('a', cubieModel, {
+  const a = new Character('a', hoomanModel, {
     name: 'Cubie A',
   });
   a.setBehavior(new WorkerBehavior(a, player, codeEditor, overlay, tipBalloon));
@@ -382,7 +390,7 @@ async function main ({
   a.lookAt(vec3.fromValues(8, 2, 40));
   game.addObject(a);
 
-  const b = new Character('b', cubieModel, {
+  const b = new Character('b', chickModel, {
     name: 'Cubie B',
   });
   b.setBehavior(new WorkerBehavior(b, player, codeEditor, overlay, tipBalloon));
