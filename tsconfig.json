@@ -7,7 +7,7 @@
     "jsx": "preserve",
     "allowSyntheticDefaultImports": true
   },
-  "includes": [
+  "include": [
     "src/**/*"
   ]
 }
