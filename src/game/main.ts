@@ -248,7 +248,7 @@ async function main ({
   });
   await new Promise(resolve => game.stitcher.once('addedAll', resolve));
 
-  const cache: Map<string, Chunk> = new Map();
+  const cache: Map<string, Chunk> = new Map<string, Chunk>();
 
   chunks.forEach(chunk => {
     const { matrix, position } = chunk;

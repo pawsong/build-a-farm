@@ -1,4 +1,4 @@
-import ndarray, { Ndarray } from 'ndarray';
+import ndarray from 'ndarray';
 import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import PF from 'pathfinding';
 import { Game } from '@buffy/voxel-engine';
@@ -13,13 +13,13 @@ import {
 const CHUNK_SIZE = 32;
 
 interface Chunk {
-  matrix: Ndarray;
+  matrix: ndarray;
   position: vec3;
 }
 
 class MapService {
   game: Game;
-  ground: Ndarray;
+  ground: ndarray;
   grid: PF.Grid;
   finder: PF.AStarFinder;
 

@@ -211,7 +211,7 @@ class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState> {
           <div>[ {this.state.characterName} ]</div>
           <div
             className={styles.close}
-            onTouchTap={this.handleCloseButtonClick}
+            onClick={this.handleCloseButtonClick}
           >
             x
           </div>
