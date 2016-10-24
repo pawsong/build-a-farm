@@ -5,9 +5,8 @@ precision highp float;
 varying vec2 vUv;
 
 void main(void) {
-
   float gridThickness = 0.05;
-  vec3 gridColor = vec3(1.0, 1.0, 1.0);
+  vec3 gridColor = vec3(0.00, 0.59, 0.53); // #009688
 
   // Edge
   vec2 eThickness = vec2(gridThickness, gridThickness) / 2.0;
@@ -19,7 +18,6 @@ void main(void) {
   ef = smoothstep(ef - eDelta, ef + eDelta, eThickness);
 
   float opacity = clamp(ef.x + ef.y, 0.0, 1.0);
-
   if(opacity < 0.5) discard;
 
   gl_FragColor = vec4(gridColor, 0.5);
