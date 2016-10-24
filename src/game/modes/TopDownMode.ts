@@ -5,7 +5,7 @@ import {
   GameObject,
   Camera,
   TopDownCamera,
-} from '@buffy/voxel-engine';
+} from '@voxeline/engine';
 
 import ModeFsm, { ModeState } from './ModeFsm';
 import CodeEditor from '../../components/CodeEditor';

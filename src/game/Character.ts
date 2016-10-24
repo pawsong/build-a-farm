@@ -4,7 +4,7 @@ import {
   GameObject,
   Model,
   FpsControlOptions,
-} from '@buffy/voxel-engine';
+} from '@voxeline/engine';
 
 import Behavior from './behaviors/Behavior';
 

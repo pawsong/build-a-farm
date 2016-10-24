@@ -1,4 +1,4 @@
-import { Interpreter, JsObject } from 'js-interpreter';
+import { Interpreter, JsObject } from 'js-interp';
 import {
   MW_STOP, MwStopParams,
   MW_RUN, MwRunParams,

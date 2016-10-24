@@ -21,14 +21,14 @@ import {
   Game,
   Camera,
   TopDownCamera,
-} from '@buffy/voxel-engine';
+} from '@voxeline/engine';
 
 import Character, {
   fpsControlOptions,
 } from '../../Character';
 
-import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
-import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
+import FpsCamera from '@voxeline/engine/lib/cameras/FpsCamera';
+import FpsControl from '@voxeline/engine/lib/controls/FpsControl';
 
 import FpsFocus from './FpsFocus';
 

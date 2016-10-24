@@ -3,6 +3,7 @@
     "module": "es6",
     "moduleResolution": "node",
     "target": "es6",
+    "outDir": "lib",
     "sourceMap": true,
     "jsx": "preserve",
     "allowSyntheticDefaultImports": true

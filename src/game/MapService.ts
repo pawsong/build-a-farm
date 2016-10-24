@@ -1,9 +1,9 @@
 import ndarray from 'ndarray';
 import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import PF from 'pathfinding';
-import { Game } from '@buffy/voxel-engine';
+import { Game } from '@voxeline/engine';
 
-const ops = require('ndarray-ops');
+import assign from 'ndarray-ops-typed/lib/assign';
 
 import {
   searchForNearestVoxel1,
@@ -46,7 +46,7 @@ class MapService {
         .lo(chunk.position[0] * CHUNK_SIZE, 0, chunk.position[2] * CHUNK_SIZE)
         .hi(CHUNK_SIZE, 1, CHUNK_SIZE);
 
-      ops.assign(dest, src);
+      assign(dest, src);
     }
 
     this.grid = new PF.Grid(this.ground.shape[0], this.ground.shape[2]);

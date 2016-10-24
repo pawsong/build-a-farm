@@ -31,7 +31,7 @@ const msgpack = require('msgpack-lite');
 const cwise = require('cwise');
 
 import ndarray from 'ndarray';
-const ops = require('ndarray-ops');
+import assigns from 'ndarray-ops-typed/lib/assigns';
 
 import {
   searchForNearestVoxel1,
@@ -48,11 +48,11 @@ import {
   Camera,
   TopDownCamera,
   Chunk,
-} from '@buffy/voxel-engine';
-import FpsCamera from '@buffy/voxel-engine/lib/cameras/FpsCamera';
-import TransitionCamera from '@buffy/voxel-engine/lib/cameras/TransitionCamera';
-import FpsControl from '@buffy/voxel-engine/lib/controls/FpsControl';
-import { lookAt } from '@buffy/voxel-engine/lib/utils/mat4';
+} from '@voxeline/engine';
+import FpsCamera from '@voxeline/engine/lib/cameras/FpsCamera';
+import TransitionCamera from '@voxeline/engine/lib/cameras/TransitionCamera';
+import FpsControl from '@voxeline/engine/lib/controls/FpsControl';
+import { lookAt } from '@voxeline/engine/lib/utils/mat4';
 
 import Overlay from '../ui/Overlay';
 import TipBalloon from '../ui/TipBalloon';
@@ -275,7 +275,7 @@ async function main ({
   game.stitcher.updateTextureSideID();
 
   const elevatorData = ndarray(new Uint16Array(2 * 1 * 2), [2, 1, 2]);
-  ops.assigns(elevatorData, 4);
+  assigns(elevatorData, 4);
 
   const elevatorModel = game.addVoxelModel('elevator', elevatorData);
 

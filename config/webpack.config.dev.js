@@ -102,7 +102,7 @@ module.exports = {
       },
       {
         test: /\.ts(x?)$/,
-        loader: `babel?${JSON.stringify(require('./babel.dev'))}!ts`,
+        loader: `babel?${JSON.stringify(require('./babel.dev'))}!awesome-typescript`,
       },
       // "postcss" loader applies autoprefixer to our CSS.
       // "css" loader resolves paths in CSS and adds assets as dependencies.

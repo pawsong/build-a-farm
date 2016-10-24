@@ -1,4 +1,4 @@
-import { Interpreter, JsObject } from 'js-interpreter';
+import { Interpreter, JsObject } from 'js-interp';
 import {
   WM_HIGHLIGHT_BLOCK, WmHighlightBlockParams,
 } from '../shared';
