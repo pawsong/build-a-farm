@@ -2,6 +2,7 @@
   "name": "build-a-farm",
   "version": "0.0.1",
   "private": true,
+  "homepage": "https://pawsong.github.io/build-a-farm/",
   "dependencies": {
     "@types/axios": "^0.9.32",
     "@types/classnames": "0.0.31",
