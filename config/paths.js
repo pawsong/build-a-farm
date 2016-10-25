@@ -1,59 +1,57 @@
-// TODO: we can split this file into several files (pre-eject, post-eject, test)
-// and use those instead. This way we don't need to branch here.
-
 var path = require('path');
+var fs = require('fs');
 
-// True after ejecting, false when used as a dependency
-var isEjected = (
-  path.resolve(path.join(__dirname, '..')) ===
-  path.resolve(process.cwd())
-);
-
-// Are we developing create-react-app locally?
-var isInCreateReactAppSource = (
-  process.argv.some(arg => arg.indexOf('--debug-template') > -1)
-);
-
-function resolveOwn(relativePath) {
-  return path.resolve(__dirname, relativePath);
-}
-
+// Make sure any symlinks in the project folder are resolved:
+// https://github.com/facebookincubator/create-react-app/issues/637
+var appDirectory = fs.realpathSync(process.cwd());
 function resolveApp(relativePath) {
-  return path.resolve(relativePath);
+  return path.resolve(appDirectory, relativePath);
 }
 
-if (isInCreateReactAppSource) {
-  // create-react-app development: we're in ./config/
+// We support resolving modules according to `NODE_PATH`.
+// This lets you use absolute paths in imports inside large monorepos:
+// https://github.com/facebookincubator/create-react-app/issues/253.
+
+// It works similar to `NODE_PATH` in Node itself:
+// https://nodejs.org/api/modules.html#modules_loading_from_the_global_folders
+
+// We will export `nodePaths` as an array of absolute paths.
+// It will then be used by Webpack configs.
+// Jest doesn’t need this because it already handles `NODE_PATH` out of the box.
+
+var nodePaths = (process.env.NODE_PATH || '')
+  .split(process.platform === 'win32' ? ';' : ':')
+  .filter(Boolean)
+  .map(resolveApp);
+
+// config after eject: we're in ./config/
+module.exports = {
+  appBuild: resolveApp('build'),
+  appPublic: resolveApp('public'),
+  appHtml: resolveApp('public/index.html'),
+  appIndexJs: resolveApp('src/index.tsx'),
+  appPackageJson: resolveApp('package.json'),
+  appSrc: resolveApp('src'),
+  testsSetup: resolveApp('src/setupTests.js'),
+  appNodeModules: resolveApp('node_modules'),
+  ownNodeModules: resolveApp('node_modules'),
+  nodePaths: nodePaths
+};
+
+
+
+// config before publish: we're in ./packages/react-scripts/config/
+if (__dirname.indexOf(path.join('packages', 'react-scripts', 'config')) !== -1) {
   module.exports = {
-    appBuild: resolveOwn('../build'),
-    appHtml: resolveOwn('../template/index.html'),
-    appFavicon: resolveOwn('../template/favicon.ico'),
+    appBuild: resolveOwn('../../../build'),
+    appPublic: resolveOwn('../template/public'),
+    appHtml: resolveOwn('../template/public/index.html'),
+    appIndexJs: resolveOwn('../template/src/index.js'),
     appPackageJson: resolveOwn('../package.json'),
     appSrc: resolveOwn('../template/src'),
+    testsSetup: resolveOwn('../template/src/setupTests.js'),
     appNodeModules: resolveOwn('../node_modules'),
-    ownNodeModules: resolveOwn('../node_modules')
-  };
-} else if (!isEjected) {
-  // before eject: we're in ./node_modules/react-scripts/config/
-  module.exports = {
-    appBuild: resolveApp('build'),
-    appHtml: resolveApp('index.html'),
-    appFavicon: resolveApp('favicon.ico'),
-    appPackageJson: resolveApp('package.json'),
-    appSrc: resolveApp('src'),
-    appNodeModules: resolveApp('node_modules'),
-    // this is empty with npm3 but node resolution searches higher anyway:
-    ownNodeModules: resolveOwn('../node_modules')
-  };
-} else {
-  // after eject: we're in ./config/
-  module.exports = {
-    appBuild: resolveApp('build'),
-    appHtml: resolveApp('index.html'),
-    appFavicon: resolveApp('favicon.ico'),
-    appPackageJson: resolveApp('package.json'),
-    appSrc: resolveApp('src'),
-    appNodeModules: resolveApp('node_modules'),
-    ownNodeModules: resolveApp('node_modules')
+    ownNodeModules: resolveOwn('../node_modules'),
+    nodePaths: nodePaths
   };
 }
