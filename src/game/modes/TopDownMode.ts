@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
 
 import {
-  Game,
   GameObject,
   Camera,
   TopDownCamera,
 } from '@voxeline/engine';
+import Game from '../Game';
 
 import ModeFsm, { ModeState } from './ModeFsm';
 import CodeEditor from '../../components/CodeEditor';

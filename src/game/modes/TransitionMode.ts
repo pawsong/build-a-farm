@@ -1,7 +1,7 @@
 import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import mat4 from 'gl-matrix/src/gl-matrix/mat4';
 
-import Game from '@voxeline/engine/lib/Game';
+import Game from '../Game';
 import GameObject from '@voxeline/engine/lib/GameObject';
 import TransitionCamera from '@voxeline/engine/lib/cameras/TransitionCamera';
 import { lookAt } from '@voxeline/engine/lib/utils/mat4';

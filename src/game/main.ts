@@ -43,12 +43,12 @@ import achievements from './achievements';
 import BLOCKS from './blocks';
 
 import {
-  Game,
   GameObject,
   Camera,
   TopDownCamera,
-  Chunk,
 } from '@voxeline/engine';
+import Game from './Game';
+import GameChunk from './GameChunk';
 import FpsCamera from '@voxeline/engine/lib/cameras/FpsCamera';
 import TransitionCamera from '@voxeline/engine/lib/cameras/TransitionCamera';
 import FpsControl from '@voxeline/engine/lib/controls/FpsControl';
@@ -248,14 +248,14 @@ async function main ({
   });
   await new Promise(resolve => game.stitcher.once('addedAll', resolve));
 
-  const cache: Map<string, Chunk> = new Map<string, Chunk>();
+  const cache: Map<string, GameChunk> = new Map<string, GameChunk>();
 
   chunks.forEach(chunk => {
     const { matrix, position } = chunk;
     matrix.position = position;
 
     const key = position.join('|');
-    cache.set(key, game.createChunk(matrix, position[0], position[1], position[2]));
+    cache.set(key, new GameChunk(matrix, position[0], position[1], position[2]));
   });
 
   const cubieModel = game.addModel('cubie', matrix, palette);
@@ -456,7 +456,7 @@ async function main ({
       }
     }
 
-    return game.createChunk(voxelsPadded, position[0], position[1], position[2]);
+    return new GameChunk(voxelsPadded, position[0], position[1], position[2]);
   }
 
   function getCachedChunk(position) {

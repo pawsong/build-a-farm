@@ -18,10 +18,10 @@ const tv0 = vec3.create();
 const m0 = mat4.create();
 
 import {
-  Game,
   Camera,
   TopDownCamera,
 } from '@voxeline/engine';
+import Game from '../../Game';
 
 import Character, {
   fpsControlOptions,

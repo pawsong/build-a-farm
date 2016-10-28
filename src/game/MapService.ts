@@ -1,7 +1,7 @@
 import ndarray from 'ndarray';
 import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 import PF from 'pathfinding';
-import { Game } from '@voxeline/engine';
+import Game from './Game';
 
 import assign from 'ndarray-ops-typed/lib/assign';
 
