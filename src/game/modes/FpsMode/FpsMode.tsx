@@ -283,6 +283,7 @@ class FpsMode extends ModeState<void> {
         this.aabbShader.uniforms.uModel = m0;
         this.box.draw();
       }
+      this.box.unbind();
 
       gl.enable(gl.DEPTH_TEST);
     }
@@ -309,6 +310,7 @@ class FpsMode extends ModeState<void> {
         this.chunkBoundsShader.uniforms.uModel = chunk.modelMatrix;
         this.boxEdge.draw();
       }
+      this.boxEdge.unbind();
 
       gl.disable(gl.POLYGON_OFFSET_FILL);
     }
