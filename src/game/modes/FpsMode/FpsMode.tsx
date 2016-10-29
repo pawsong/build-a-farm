@@ -22,6 +22,7 @@ import {
   TopDownCamera,
 } from '@voxeline/engine';
 import Game from '../../Game';
+import GameChunk from '../../GameChunk';
 
 import Character, {
   fpsControlOptions,
@@ -79,6 +80,9 @@ class FpsMode extends ModeState<void> {
   showChunkBounds: boolean;
   boxEdge: any;
   chunkBoundsShader: any;
+
+  showNavmesh: boolean;
+  navmeshShader: any;
 
   constructor(fsm: ModeFsm, game: Game, player: Character) {
     super(fsm);
@@ -155,15 +159,20 @@ class FpsMode extends ModeState<void> {
       cell[1] = tmp;
     }
 
-    this.boxEdge = new GLGeometry(this.game.shell.gl)
+    const { gl } = game.shell;
+
+    this.boxEdge = new GLGeometry(gl)
       .attr('position', boxEdge.positions)
       .attr('uv', boxEdge.uvs, { size: 2 })
       .faces(boxEdge.cells);
 
-    this.chunkBoundsShader = glShader(this.game.shell.gl,
+    this.chunkBoundsShader = glShader(gl,
       require('raw!glslify!../../../shaders/chunk.vert'),
       require('raw!glslify!../../../shaders/chunk.frag')
     );
+
+    this.showNavmesh = true;
+    this.navmeshShader = GameChunk.createNavMeshShader(gl);
   }
 
   on(type: string, handler: Function) {
@@ -312,6 +321,36 @@ class FpsMode extends ModeState<void> {
       }
       this.boxEdge.unbind();
 
+      gl.disable(gl.POLYGON_OFFSET_FILL);
+    }
+
+    if (this.showNavmesh) {
+      const { gl } = this.game.shell;
+      const { viewMatrix, projectionMatrix } = this.camera;
+
+      gl.disable(gl.BLEND);
+      gl.enable(gl.POLYGON_OFFSET_FILL);
+      gl.polygonOffset(-1, 2);
+
+      this.navmeshShader.bind();
+      this.navmeshShader.uniforms.projection = projectionMatrix;
+      this.navmeshShader.uniforms.view = viewMatrix;
+
+      const { chunks } = this.game.voxels;
+      const keys = Object.keys(chunks);
+
+      for (let k = 0, len = keys.length; k < len; ++k) {
+        const chunkIndex = keys[k];
+        const chunk = chunks[chunkIndex];
+        const vao = chunk.getNavMeshVao(gl);
+        if (vao) {
+          vao.bind();
+          gl.drawArrays(gl.TRIANGLES, 0, vao.length);
+          vao.unbind();
+        }
+      }
+
+      gl.enable(gl.BLEND);
       gl.disable(gl.POLYGON_OFFSET_FILL);
     }
   }

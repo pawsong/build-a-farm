@@ -562,6 +562,7 @@ async function main ({
   const gui = new dat.GUI();
   gui.add(fpsMode, 'showAABB');
   gui.add(fpsMode, 'showChunkBounds');
+  gui.add(fpsMode, 'showNavmesh');
 }
 
 export default main;
