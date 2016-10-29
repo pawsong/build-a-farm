@@ -2,12 +2,20 @@ import ndarray from 'ndarray';
 const createShader = require('gl-shader');
 const createBuffer = require('gl-buffer');
 const createVAO = require('gl-vao');
+const cwise = require('cwise');
 import { NavMesher, NavMesh } from '@voxeline/pathfinder';
 import Chunk from '@voxeline/engine/lib/Chunk';
 
 const VERTEX_SIZE = 8;
 
 const navmesher = new NavMesher();
+
+const filter = cwise({
+  args: ['array'],
+  body: function (a) {
+    if (a) a = 1;
+  },
+});
 
 function writeVertex(data: Float32Array, idx: number, x: number, y: number, z: number, u: number, v: number) {
   // attrib1
@@ -122,8 +130,9 @@ class GameChunk extends Chunk {
 
   getNavMesh() {
     if (this.navmeshNeedsToUpdate) {
-      this.navmesh = navmesher.build(
-        navmesher.pad(this.data),
+      const padded = navmesher.pad(this.data);
+      filter(padded);
+      this.navmesh = navmesher.build(padded,
         this.offset[0], this.offset[1], this.offset[2],
       );
       this.navmeshNeedsToUpdate = false;
