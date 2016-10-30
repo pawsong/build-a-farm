@@ -22,7 +22,10 @@ import {
   TopDownCamera,
 } from '@voxeline/engine';
 import Game from '../../Game';
-import GameChunk from '../../GameChunk';
+import GameChunk, {
+  createNavMeshShader,
+  createNavMeshStitchShader,
+} from '../../GameChunk';
 
 import Character, {
   fpsControlOptions,
@@ -83,6 +86,7 @@ class FpsMode extends ModeState<void> {
 
   showNavmesh: boolean;
   navmeshShader: any;
+  navmeshStitchShader: any;
 
   constructor(fsm: ModeFsm, game: Game, player: Character) {
     super(fsm);
@@ -172,7 +176,8 @@ class FpsMode extends ModeState<void> {
     );
 
     this.showNavmesh = true;
-    this.navmeshShader = GameChunk.createNavMeshShader(gl);
+    this.navmeshShader = createNavMeshShader(gl);
+    this.navmeshStitchShader = createNavMeshStitchShader(gl);
   }
 
   on(type: string, handler: Function) {
@@ -342,11 +347,36 @@ class FpsMode extends ModeState<void> {
       for (let k = 0, len = keys.length; k < len; ++k) {
         const chunkIndex = keys[k];
         const chunk = chunks[chunkIndex];
-        const vao = chunk.getNavMeshVao(gl);
-        if (vao) {
-          vao.bind();
-          gl.drawArrays(gl.TRIANGLES, 0, vao.length);
-          vao.unbind();
+        const { navmeshVao } = chunk.getNavMeshVao(gl);
+        if (navmeshVao) {
+          navmeshVao.bind();
+          gl.drawArrays(gl.TRIANGLES, 0, navmeshVao.length);
+          navmeshVao.unbind();
+        }
+      }
+
+      gl.lineWidth(5);
+
+      this.navmeshStitchShader.bind();
+      this.navmeshStitchShader.uniforms.projection = projectionMatrix;
+      this.navmeshStitchShader.uniforms.view = viewMatrix;
+
+      for (let k = 0, len = keys.length; k < len; ++k) {
+        const chunkIndex = keys[k];
+        const chunk = chunks[chunkIndex];
+
+        const { navmeshStitchVao, navmeshCenterPointVao } = chunk.getNavMeshVao(gl);
+
+        if (navmeshStitchVao) {
+          navmeshStitchVao.bind();
+          gl.drawArrays(gl.LINE_STRIP, 0, navmeshStitchVao.length);
+          navmeshStitchVao.unbind();
+        }
+
+        if (navmeshCenterPointVao) {
+          navmeshCenterPointVao.bind();
+          gl.drawArrays(gl.TRIANGLES, 0, navmeshCenterPointVao.length);
+          navmeshCenterPointVao.unbind();
         }
       }
 
