@@ -1,4 +1,5 @@
 import React from 'react';
+import vec3 from 'gl-matrix/src/gl-matrix/vec3';
 
 import {
   GameObject,
@@ -31,6 +32,9 @@ class Character extends GameObject {
   propsBT: Map<string, boolean>;
   propsN: Map<string, number>;
 
+  pathStart: vec3;
+  pathEnd: vec3;
+
   constructor(id: string, model: Model, options: CharacterOptions) {
     super(id, model, {
       control: fpsControlOptions,
@@ -42,6 +46,9 @@ class Character extends GameObject {
     this.propsB = new Map();
     this.propsBT = new Map();
     this.propsN = new Map();
+
+    this.pathStart = vec3.create();
+    this.pathEnd = vec3.create();
 
     this.behavior = defaultBehavior;
     this.on('used', sender => this.behavior.onUsed(sender));

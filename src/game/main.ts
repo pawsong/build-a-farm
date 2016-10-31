@@ -268,36 +268,32 @@ async function main ({
     {
       const neighbor = getChunkCache(position[0] + 1, position[1], position[2]);
       if (neighbor) {
-        const neighborNavmesh = neighbor.getNavMesh();
-        navmesh.connectLeft(neighborNavmesh);
-        neighborNavmesh.connectRight(navmesh);
+        c.connectLeft(neighbor);
+        neighbor.connectRight(c);
       }
     }
 
     {
       const neighbor = getChunkCache(position[0] - 1, position[1], position[2]);
       if (neighbor) {
-        const neighborNavmesh = neighbor.getNavMesh();
-        navmesh.connectRight(neighborNavmesh);
-        neighborNavmesh.connectLeft(navmesh);
+        c.connectRight(neighbor);
+        neighbor.connectLeft(c);
       }
     }
 
     {
       const neighbor = getChunkCache(position[0], position[1], position[2] + 1);
       if (neighbor) {
-        const neighborNavmesh = neighbor.getNavMesh();
-        navmesh.connectFront(neighborNavmesh);
-        neighborNavmesh.connectBack(navmesh);
+        c.connectFront(neighbor);
+        neighbor.connectBack(c);
       }
     }
 
     {
       const neighbor = getChunkCache(position[0], position[1], position[2] - 1);
       if (neighbor) {
-        const neighborNavmesh = neighbor.getNavMesh();
-        navmesh.connectBack(neighborNavmesh);
-        neighborNavmesh.connectFront(navmesh);
+        c.connectBack(neighbor);
+        neighbor.connectFront(c);
       }
     }
   });
@@ -528,7 +524,7 @@ async function main ({
 
   vm.on('api', async (child, params) => {
     try {
-      const object = game.getObject(params.objectId);
+      const object = <Character> game.getObject(params.objectId);
 
       switch(params.api) {
         case 'getNearestVoxels': {
@@ -547,7 +543,21 @@ async function main ({
         case 'use': {
           const target = params.body;
           const { position } = object;
-          const path = mapService.findPath(position, target);
+
+          // Get nearest walkable position
+          if (!game.getNearestWalkableVoxel(v2, position, target)) {
+            // TODO: Error handling
+            console.warn('Cannot find nearest walkable voxel');
+            break;
+          }
+
+          const path = game.findPath(position, v2, object.pathStart, object.pathEnd);
+
+          if (!path) {
+            // TODO: Handle error
+            console.warn('Cannot find path');
+            break;
+          }
 
           await object.move(path);
 

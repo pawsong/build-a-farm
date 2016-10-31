@@ -195,15 +195,39 @@ interface IsSolidVoxel {
   (v: number): boolean;
 }
 
+enum Face {
+  LEFT = 0,
+  RIGHT,
+  TOP,
+  BOTTOM,
+  FRONT,
+  BACK,
+}
+
+const Opposite = new Map<Face, Face>();
+Opposite.set(Face.LEFT, Face.RIGHT);
+Opposite.set(Face.RIGHT, Face.LEFT);
+Opposite.set(Face.TOP, Face.BOTTOM);
+Opposite.set(Face.BOTTOM, Face.TOP);
+Opposite.set(Face.FRONT, Face.BACK);
+Opposite.set(Face.BACK, Face.FRONT);
+
+const faces = [
+  Face.LEFT, Face.RIGHT, Face.TOP, Face.BOTTOM, Face.FRONT, Face.BACK,
+];
+
 class GameChunk extends Chunk {
   private navmesh: NavMesh;
   private navmeshNeedsToUpdate: boolean;
+
+  private isSolidVoxel: IsSolidVoxel;
 
   private navmeshVaoSource: NavMesh;
   private navmeshVao: any;
   private navmeshStitchVao: any;
   private navmeshCenterPointVao: any;
-  private isSolidVoxel: IsSolidVoxel;
+
+  private connected: GameChunk[]; // Map<Face, GameChunk>;
 
   constructor(isSolidVoxel: IsSolidVoxel, data: ndarray, p0: number, p1: number, p2: number) {
     super(data, p0, p1, p2);
@@ -211,26 +235,68 @@ class GameChunk extends Chunk {
     this.isSolidVoxel = isSolidVoxel;
     this.navmeshNeedsToUpdate = true;
     this.navmeshVaoSource = null;
+
+    this.connected = [null, null, null, null, null, null];
   }
 
   set(x: number, y: number, z: number, val: number) {
     this.navmeshNeedsToUpdate = true;
+
+    // TODO: Set neighbors needs to reconnect
     return super.set(x, y, z, val);
+  }
+
+  connectLeft(chunk: GameChunk) {
+    return this.connect(Face.LEFT, chunk);
+  }
+
+  connectRight(chunk: GameChunk) {
+    return this.connect(Face.RIGHT, chunk);
+  }
+
+  connectTop(chunk: GameChunk) {
+    return this.connect(Face.TOP, chunk);
+  }
+
+  connectBottom(chunk: GameChunk) {
+    return this.connect(Face.BOTTOM, chunk);
+  }
+
+  connectFront(chunk: GameChunk) {
+    return this.connect(Face.FRONT, chunk);
+  }
+
+  connectBack(chunk: GameChunk) {
+    return this.connect(Face.BACK, chunk);
+  }
+
+  private connect(face: Face, chunk: GameChunk) {
+    this.navmesh.connect(face, chunk.getNavMesh());
+    this.connected[face] = chunk;
   }
 
   getNavMesh() {
     if (this.navmeshNeedsToUpdate) {
-      const padded = navmesher.pad(this.data, v =>  v && this.isSolidVoxel(v) ? 1 : 0);
-      this.navmesh = navmesher.build(padded,
-        this.offset[0], this.offset[1], this.offset[2],
-      );
       this.navmeshNeedsToUpdate = false;
+
+      const padded = navmesher.pad(this.data, v =>  v && this.isSolidVoxel(v) ? 1 : 0);
+      this.navmesh = navmesher.build(padded, this.offset[0], this.offset[1], this.offset[2]);
+
+      for (const face of faces) {
+        const chunk = this.connected[face];
+        if (chunk) {
+          this.connect(face, chunk);
+          chunk.connect(Opposite.get(face), this);
+        }
+      }
     }
+
     return this.navmesh;
   }
 
   getNavMeshVao(gl: WebGLRenderingContext) {
     const mesh = this.getNavMesh();
+
     if (this.navmeshVaoSource !== mesh) {
       this.navmeshVao = createNavMeshVao(gl, mesh);
       this.navmeshStitchVao = createNavMeshStitchVao(gl, mesh);
@@ -238,6 +304,7 @@ class GameChunk extends Chunk {
 
       this.navmeshVaoSource = mesh;
     }
+
     return {
       navmeshVao: this.navmeshVao,
       navmeshStitchVao: this.navmeshStitchVao,
