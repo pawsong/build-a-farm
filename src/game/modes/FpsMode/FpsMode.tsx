@@ -369,7 +369,7 @@ class FpsMode extends ModeState<void> {
 
         if (navmeshStitchVao) {
           navmeshStitchVao.bind();
-          gl.drawArrays(gl.LINE_STRIP, 0, navmeshStitchVao.length);
+          gl.drawArrays(gl.LINES, 0, navmeshStitchVao.length);
           navmeshStitchVao.unbind();
         }
 

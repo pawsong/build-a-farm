@@ -7,17 +7,9 @@ import { NavMesher, NavMesh } from '@voxeline/pathfinder';
 import Chunk from '@voxeline/engine/lib/Chunk';
 
 const NODE_VERTEX_SIZE = 8;
-const STITCH_VERTEX_SIZE = 6;
 const POINT_VERTEX_SIZE = 3;
 
 const navmesher = new NavMesher();
-
-const filter = cwise({
-  args: ['array'],
-  body: function (a) {
-    if (a) a = 1;
-  },
-});
 
 function writeNodeVertex(data: Float32Array, ptr: number, x: number, y: number, z: number, u: number, v: number) {
   // attrib1
@@ -110,12 +102,21 @@ export function createNavMeshShader(gl: WebGLRenderingContext) {
   return shader;
 }
 
+function writePointVertex(data: Float32Array, ptr: number, x: number, y: number, z: number) {
+  // attrib1
+  data[ptr+0] = x;
+  data[ptr+1] = y;
+  data[ptr+2] = z;
+
+  return ptr + POINT_VERTEX_SIZE;
+}
+
 function createNavMeshStitchVao(gl: WebGLRenderingContext, mesh: NavMesh) {
   if (mesh.nodes.length === 0) return null;
 
   let size = 0;
   for (const node of mesh.nodes) {
-    size += node.edges.length * STITCH_VERTEX_SIZE;
+    size += node.edges.length * 2 * POINT_VERTEX_SIZE;
   }
 
   const data = new Float32Array(size);
@@ -123,13 +124,8 @@ function createNavMeshStitchVao(gl: WebGLRenderingContext, mesh: NavMesh) {
 
   for (const node of mesh.nodes) {
     for (const edge of node.edges) {
-      data[ptr+0] = edge.src.center[0];
-      data[ptr+1] = edge.src.center[1];
-      data[ptr+2] = edge.src.center[2];
-      data[ptr+3] = edge.dest.center[0];
-      data[ptr+4] = edge.dest.center[1];
-      data[ptr+5] = edge.dest.center[2];
-      ptr += STITCH_VERTEX_SIZE;
+      ptr = writePointVertex(data, ptr, edge.src.center[0], edge.src.center[1], edge.src.center[2]);
+      ptr = writePointVertex(data, ptr, edge.dest.center[0], edge.dest.center[1], edge.dest.center[2]);
     }
   }
 
@@ -137,9 +133,9 @@ function createNavMeshStitchVao(gl: WebGLRenderingContext, mesh: NavMesh) {
   const vao = createVAO(gl, [{
     buffer,
     type: gl.FLOAT,
-    size: 3,
+    size: POINT_VERTEX_SIZE,
   }]);
-  vao.length = ptr / STITCH_VERTEX_SIZE;
+  vao.length = ptr / POINT_VERTEX_SIZE;
   return vao;
 }
 
@@ -163,15 +159,6 @@ export function createNavMeshStitchShader(gl: WebGLRenderingContext) {
 
   shader.attributes.attrib0.location = 0;
   return shader;
-}
-
-function writePointVertex(data: Float32Array, ptr: number, x: number, y: number, z: number) {
-  // attrib1
-  data[ptr+0] = x;
-  data[ptr+1] = y;
-  data[ptr+2] = z;
-
-  return ptr + POINT_VERTEX_SIZE;
 }
 
 const POINT_SIZE = 0.1;
@@ -204,6 +191,10 @@ function createNavMeshCenterPointVao(gl: WebGLRenderingContext, mesh: NavMesh) {
   return vao;
 }
 
+interface IsSolidVoxel {
+  (v: number): boolean;
+}
+
 class GameChunk extends Chunk {
   private navmesh: NavMesh;
   private navmeshNeedsToUpdate: boolean;
@@ -212,10 +203,12 @@ class GameChunk extends Chunk {
   private navmeshVao: any;
   private navmeshStitchVao: any;
   private navmeshCenterPointVao: any;
+  private isSolidVoxel: IsSolidVoxel;
 
-  constructor(data: ndarray, p0: number, p1: number, p2: number) {
+  constructor(isSolidVoxel: IsSolidVoxel, data: ndarray, p0: number, p1: number, p2: number) {
     super(data, p0, p1, p2);
 
+    this.isSolidVoxel = isSolidVoxel;
     this.navmeshNeedsToUpdate = true;
     this.navmeshVaoSource = null;
   }
@@ -227,8 +220,7 @@ class GameChunk extends Chunk {
 
   getNavMesh() {
     if (this.navmeshNeedsToUpdate) {
-      const padded = navmesher.pad(this.data);
-      filter(padded);
+      const padded = navmesher.pad(this.data, v =>  v && this.isSolidVoxel(v) ? 1 : 0);
       this.navmesh = navmesher.build(padded,
         this.offset[0], this.offset[1], this.offset[2],
       );

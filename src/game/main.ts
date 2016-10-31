@@ -255,7 +255,7 @@ async function main ({
     matrix.position = position;
 
     const key = position.join('|');
-    cache.set(key, new GameChunk(matrix, position[0], position[1], position[2]));
+    cache.set(key, new GameChunk(game.isSolidVoxel, matrix, position[0], position[1], position[2]));
   });
 
   const cubieModel = game.addModel('cubie', matrix, palette);
@@ -456,7 +456,7 @@ async function main ({
       }
     }
 
-    return new GameChunk(voxelsPadded, position[0], position[1], position[2]);
+    return new GameChunk(game.isSolidVoxel, voxelsPadded, position[0], position[1], position[2]);
   }
 
   function getCachedChunk(position) {

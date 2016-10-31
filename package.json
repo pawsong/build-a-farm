@@ -34,7 +34,7 @@
     "material-ui": "^0.16.1",
     "msgpack-lite": "^0.1.26",
     "ndarray": "^1.0.18",
-    "ndarray-ops-typed": "^0.1.3",
+    "ndarray-ops-typed": "^0.2.0",
     "pako": "^1.0.3",
     "pathfinding": "^0.4.18",
     "ray-aabb": "^3.0.2",
