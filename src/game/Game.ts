@@ -70,8 +70,8 @@ class Game extends GameBase<GameChunk> {
   }
 
   private testNearestWalkable(out: vec3, minSqDist: number, p: vec3, x: number, y: number, z: number) {
-    if (this.getVoxel(x, y, z) !== 0) y += 1;
-    if (this.getVoxel(x, y, z) !== 0) return minSqDist;
+    if (this.isSolidVoxel(this.getVoxel(x, y, z))) y += 1;
+    if (this.isSolidVoxel(this.getVoxel(x, y, z))) return minSqDist;
 
     // Center position
     const cx = x + 0.5;
