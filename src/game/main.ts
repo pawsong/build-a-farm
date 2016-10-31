@@ -250,12 +250,56 @@ async function main ({
 
   const cache: Map<string, GameChunk> = new Map<string, GameChunk>();
 
+  function getChunkCache(x, y, z) {
+    const key = [x, y, z].join('|');
+    return cache.get(key);
+  }
+
   chunks.forEach(chunk => {
     const { matrix, position } = chunk;
     matrix.position = position;
 
     const key = position.join('|');
-    cache.set(key, new GameChunk(game.isSolidVoxel, matrix, position[0], position[1], position[2]));
+    const c = new GameChunk(game.isSolidVoxel, matrix, position[0], position[1], position[2]);
+    cache.set(key, c);
+
+    const navmesh = c.getNavMesh();
+
+    {
+      const neighbor = getChunkCache(position[0] + 1, position[1], position[2]);
+      if (neighbor) {
+        const neighborNavmesh = neighbor.getNavMesh();
+        navmesh.connectLeft(neighborNavmesh);
+        neighborNavmesh.connectRight(navmesh);
+      }
+    }
+
+    {
+      const neighbor = getChunkCache(position[0] - 1, position[1], position[2]);
+      if (neighbor) {
+        const neighborNavmesh = neighbor.getNavMesh();
+        navmesh.connectRight(neighborNavmesh);
+        neighborNavmesh.connectLeft(navmesh);
+      }
+    }
+
+    {
+      const neighbor = getChunkCache(position[0], position[1], position[2] + 1);
+      if (neighbor) {
+        const neighborNavmesh = neighbor.getNavMesh();
+        navmesh.connectFront(neighborNavmesh);
+        neighborNavmesh.connectBack(navmesh);
+      }
+    }
+
+    {
+      const neighbor = getChunkCache(position[0], position[1], position[2] - 1);
+      if (neighbor) {
+        const neighborNavmesh = neighbor.getNavMesh();
+        navmesh.connectBack(neighborNavmesh);
+        neighborNavmesh.connectFront(navmesh);
+      }
+    }
   });
 
   const cubieModel = game.addModel('cubie', matrix, palette);
