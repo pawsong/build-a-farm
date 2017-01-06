@@ -1,11 +1,11 @@
 import React from 'react';
 import vec3 from 'gl-matrix/src/gl-matrix/vec3';
-
 import {
   GameObject,
   Model,
   FpsControlOptions,
 } from '@voxeline/engine';
+import Game from './Game';
 
 import Behavior from './behaviors/Behavior';
 
@@ -35,8 +35,8 @@ class Character extends GameObject {
   pathStart: vec3;
   pathEnd: vec3;
 
-  constructor(id: string, model: Model, options: CharacterOptions) {
-    super(id, model, {
+  constructor(game: Game, id: string, model: Model, options: CharacterOptions) {
+    super(game, id, model, {
       control: fpsControlOptions,
       mass: options.mass,
       gravityMultiplier: options.gravityMultiplier,

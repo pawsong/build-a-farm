@@ -396,7 +396,7 @@ async function main ({
     gameObject.emit('voxelused', voxelId, position);
   }
 
-  const player = new Character('player', cubieModel, {
+  const player = new Character(game, 'player', cubieModel, {
     name: 'Player',
   });
   player.setScale(1.5 / 16, 1.5 / 16, 1.5 / 16);
@@ -409,7 +409,7 @@ async function main ({
     dialogue.showMessage(speaker.name, message).then(() => callback());
   });
 
-  const helper = new Character('helper', helperModel, {
+  const helper = new Character(game, 'helper', helperModel, {
     name: 'Neko',
   });
   helper.setBehavior(new HelperBehavior(helper, player, mapService));
@@ -421,7 +421,7 @@ async function main ({
   // helper.on('appear', () => console.log('good!'));
   game.addObject(helper);
 
-  const a = new Character('a', hoomanModel, {
+  const a = new Character(game, 'a', hoomanModel, {
     name: 'Cubie A',
   });
   a.setBehavior(new WorkerBehavior(a, player, codeEditor, overlay, tipBalloon));
@@ -430,7 +430,7 @@ async function main ({
   a.lookAt(vec3.fromValues(8, 2, 40));
   game.addObject(a);
 
-  const b = new Character('b', chickModel, {
+  const b = new Character(game, 'b', chickModel, {
     name: 'Cubie B',
   });
   b.setBehavior(new WorkerBehavior(b, player, codeEditor, overlay, tipBalloon));
@@ -439,7 +439,7 @@ async function main ({
   b.lookAt(vec3.fromValues(10, 7, 37));
   game.addObject(b);
 
-  const c = new Character('c', cubieModel, {
+  const c = new Character(game, 'c', cubieModel, {
     name: 'Cubie C',
   });
   c.setBehavior(new WorkerBehavior(c, player, codeEditor, overlay, tipBalloon));
@@ -448,7 +448,7 @@ async function main ({
   c.lookAt(vec3.fromValues(12, 4, 43));
   game.addObject(c);
 
-  const elevator = new Character('elevator', elevatorModel, {
+  const elevator = new Character(game, 'elevator', elevatorModel, {
     name: 'Elevator',
     mass: Infinity,
     gravityMultiplier: 0,
